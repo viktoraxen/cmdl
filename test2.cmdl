@@ -1,0 +1,13 @@
+signal a, b, c, f, g, h, i
+
+a <= d and e
+b <= f and g
+c <= h and i
+a <= b and c
+
+signal q
+
+component Xor(a, b, c) => x
+    signal x <= a and not b 
+    signal v
+end

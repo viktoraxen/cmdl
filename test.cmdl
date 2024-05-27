@@ -1,0 +1,22 @@
+signal a <= b
+c <= d
+
+component Xor(a, b) => x
+    u <= w
+    signal c, d <= a
+    x <= c and d or b
+    y <= c and d
+
+    b <= f and b or q or (c and d) or f
+
+    component Hejhopp(a, c, s, g, w) => x
+        x <= skd and kdjf or dfk
+    end
+end
+
+component Nor(a, b, d) => y, x
+    signal apa <= a and not b or c
+    signal monke <= apa or not b or not q and a or d and not g and (not b and a) or (b and not f)
+    x, y <= Xor(apa, monke)
+    monke <= Xor(apa, b)
+end
