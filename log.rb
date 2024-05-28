@@ -1,39 +1,60 @@
-#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# !/usr/bin/env ruby
 
 require 'logger'
+require 'colorize'
 
 class Log
+    @@colors = [
+        :light_cyan,
+        :light_blue,
+        :light_magenta,
+        :light_green,
+        :light_yellow
+    ]
+
     @@logger = Logger.new($stdout)
 
     def Log.initialize(level)
         @@logger.level = level
-        @@logger.formatter = proc do |severity, datetime, progname, msg|
+        @@logger.formatter = proc do |severity, datetime, _, msg|
             date_format = datetime.strftime('%H:%M:%S')
             "#{date_format} #{severity.ljust(5)}: #{msg}\n"
         end
     end
 
-    def Log.debug(message)
-        @@logger.debug(message)
+    def Log.colorize(*args)
+        message = ''
+
+        args.each_with_index do |arg, i|
+            message += "#{arg.colorize(@@colors[i % @@colors.size])} "
+        end
+
+        message
     end
 
-    def Log.info(message)
-        @@logger.info(message)
+    def Log.debug(*args)
+        @@logger.debug(Log.colorize(*args))
     end
 
-    def Log.warn(message)
-        @@logger.warn(message)
+    def Log.info(*args)
+        @@logger.info(Log.colorize(*args))
     end
 
-    def Log.error(message)
-        @@logger.error(message)
+    def Log.warn(*args)
+        @@logger.warn(Log.colorize(*args))
     end
 
-    def Log.fatal(message)
-        @@logger.fatal(message)
+    def Log.error(*args)
+        @@logger.error(Log.colorize(*args))
     end
 
-    def Log.unknown(message)
-        @@logger.unknown(message)
+    def Log.fatal(*args)
+        @@logger.fatal(Log.colorize(*args))
+    end
+
+    def Log.unknown(*args)
+        @@logger.unknown(Log.colorize(*args))
     end
 end

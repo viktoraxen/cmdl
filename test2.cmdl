@@ -1,13 +1,13 @@
-signal a, b, c, f, g, h, i
+signal a, b, c, d, e, f
 
-a <= d and e
-b <= f and g
-c <= h and i
-a <= b and c
+a <= d and e or f
+b <= (d and e) or f
+c <= d and (e or f)
 
-signal q
+signal g, h, i, j, k, l, m, n, o
 
-component Xor(a, b, c) => x
-    signal x <= a and not b 
-    signal v
-end
+g <= j and not k or not j and k
+h <= j and not (k or not j) and k
+i <= j and not k or not (j and k)
+l <= (j and not k) or not (j and k)
+

@@ -10,7 +10,7 @@ class Scope
         @name         = name
         @parent_scope = parent_scope
         @subscopes    = {}
-        @blueprint    = Blueprint.new
+        @blueprint    = Blueprint.new(self)
     end
 
     def add_subscope(name)

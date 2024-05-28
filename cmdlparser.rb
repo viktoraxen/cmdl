@@ -38,34 +38,31 @@ class CmdlParser < Parser
             end
 
             rule :component do
-                match('component', :component_id, :statements, 'end') do |_, id, statements, _|
+                match('component', :id, :statements, 'end') do |_, id, statements, _|
                     ComponentNode.new(id, nil, nil, statements)
                 end
-                match('component', :component_id, '(', :signal_ids, ')', '=>', :signal_ids,
+                match('component', :id, '(', :ids, ')', '=>', :ids,
                       :statements,
                       'end') do 
                     |_, id_node, _, input_ids_node, _, _, output_ids_node, statements_node, _|
-                        # input_ids_node.value = 'inputs'
-                        # output_ids_node.value = 'outputs'
-                        # statements_node.value = 'statements'
                         ComponentNode.new(id_node, input_ids_node, output_ids_node, statements_node)
                 end
             end
 
             rule :declaration do
-                match('signal', :signal_ids) do |_, ids|
+                match('signal', :signals) do |_, ids|
                     DeclareNode.new(ids)
                 end
             end
 
             rule :assign do
-                match(:signal_ids, '<=', :expression) do |ids, _, expr|
+                match(:signals, '<=', :expression) do |ids, _, expr|
                     AssignNode.new(ids, expr)
                 end
             end
 
             rule :definition do
-                match('signal', :signal_ids, '<=', :expression) do |_, ids, _, expr|
+                match('signal', :signals, '<=', :expression) do |_, ids, _, expr|
                     DefineNode.new(ids, expr)
                 end
             end
@@ -96,7 +93,7 @@ class CmdlParser < Parser
             end
 
             rule :expression_component do
-                match(:component_id, '(', :atomics, ')') do |component_id, _, inputs, _|
+                match(:id, '(', :signals, ')') do |component_id, _, inputs, _|
                     ComponentExpressionNode.new(component_id, inputs)
                 end
                 match(:expression_primary) { |expr| expr }
@@ -104,37 +101,7 @@ class CmdlParser < Parser
 
             rule :expression_primary do
                 match('(', :expression, ')') { |_, expr, _| expr }
-                match(:atomics)              { |a| a }
-            end
-
-            # rule :expression_constant do
-            #     match(:constant) { |a| ConstantExpressionNode.new(a) }
-            # end
-
-            # rule :expression_signal do
-            #     match(:signal_id) { |a| SignalExpressionNode.new(a) }
-            # end
-
-            # rule :scope do
-            #     match(:relative_scope) { |a| a }
-            #     match(:absolute_scope) { |a| a }
-            # end
-
-            # rule :absolute_scope do
-            #     match('.', :scope_path) { |_, path| AbsoluteScopeNode.new('absolute scope', [path]) }
-            # end
-
-            # rule :relative_scope do
-            #     match(:scope_path) { |path| RelativeScopeNode.new('relative scope', [path]) }
-            # end
-
-            # rule :scope_path do
-            #     match(:scope_path, '.', :component_id) { |path, _, id| path.add_child(id) }
-            #     match(:component_id)                   { |id| ScopePathNode.new('scope path', [id]) }
-            # end
-
-            rule :component_id do
-                match(/[A-Z][a-zA-Z]*/) { |a| IdNode.new a }
+                match(:signals)              { |a| a }
             end
 
             rule :atomics do
@@ -143,17 +110,18 @@ class CmdlParser < Parser
             end
 
             rule :atomic do
-                match(:signal_id) { |id| id }
-                match(:constant)  { |constant| constant }
+                match(:constant) { |constant| constant }
+                match(:id)       { |id| id }
             end
 
-            rule :signal_ids do
-                match(:signal_ids, ',', :signal_id) { |ids, _, id| ids.add_child(id) }
-                match(:signal_id)                   { |id| ListNode.new(id) }
+            rule :signals do
+                match(:signals, ',', :signal) { |signals, _, signal| signals.add_child(signal) }
+                match(:signal)                { |signal| ListNode.new(signal) }
             end
 
-            rule :signal_id do
-                match(/[a-z][a-zA-Z_]*/) { |a| SignalNode.new a }
+            rule :signal do
+                match(:constant) { |a| SignalNode.new a }
+                match(:id)       { |a| SignalNode.new a }
             end
 
             rule :constants do
@@ -163,6 +131,15 @@ class CmdlParser < Parser
 
             rule :constant do
                 match(/[0|1]/) { |a| ConstantNode.new a }
+            end
+
+            rule :ids do
+                match(:ids, ',', :id) { |ids, _, id| ids.add_child(id) }
+                match(:id)            { |id| ListNode.new(id) }
+            end
+
+            rule :id do
+                match(/[a-zA-Z]*/) { |a| IdNode.new a }
             end
         end
     end
