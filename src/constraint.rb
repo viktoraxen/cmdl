@@ -27,15 +27,20 @@ end
 class Constraint
     include MyPrettyPrint
 
-    attr_reader :output, :inputs
+    attr_reader :outputs, :inputs
 
-    def initialize(name, inputs, output)
+    def initialize(name, inputs, outputs)
         @name = name
         @inputs = inputs
         @inputs.each { |input| input.add_connection(self) }
-        @output = output
-        @output.add_constraint(self)
-        new_value unless @inputs.any? { |input| input.value == '<nil>' }
+        @outputs = outputs
+        @outputs.each { |output| output.add_constraint(self) }
+
+        new_value
+    end
+
+    def new_value
+        raise NotImplementedError
     end
 
     def ==(other)
@@ -62,8 +67,8 @@ end
 class BinaryConstraint < Constraint
     include MyPrettyPrint
 
-    # def initialize(input1, input2, output)
-    #     super([input1, input2], output)
+    # def initialize(name, input1, input2, output)
+    #     super(name, [input1, input2], output)
     # end
 
     def type_s
@@ -79,7 +84,11 @@ class AndGate < BinaryConstraint
     include MyPrettyPrint
 
     def new_value
-        @output.value = determined? ? (@inputs[0].value and @inputs[1].value) : '<nil>'
+        return if @inputs.any? { |input| input.value == '<nil>' }
+
+        @outputs.each do |output|
+            output.value = determined? ? (@inputs[0].value and @inputs[1].value) : '<nil>'
+        end
     end
 
     def type_s
@@ -92,7 +101,10 @@ class OrGate < BinaryConstraint
 
     def new_value
         return if @inputs.any? { |input| input.value == '<nil>' }
-        @output.value = (@inputs[0].value or @inputs[1].value)
+
+        @outputs.each do |output|
+            output.value = (@inputs[0].value or @inputs[1].value)
+        end
     end
 
     def type_s
@@ -102,6 +114,10 @@ end
 
 class UnaryConstraint < Constraint
     include MyPrettyPrint
+
+    # def initialize(name, input, output)
+    #     super(name, [input], [output])
+    # end
 
     def type_s
         'unary'
@@ -117,7 +133,10 @@ class NotGate < UnaryConstraint
 
     def new_value
         return if @inputs.any? { |input| input.value == '<nil>' }
-        @output.value = (!@inputs[0].value)
+
+        @outputs.each do |output|
+            output.value = (!@inputs[0].value)
+        end
     end
 
     def type_s
@@ -125,16 +144,22 @@ class NotGate < UnaryConstraint
     end
 end
 
-class DirectGate < UnaryConstraint
+class FanGate < Constraint
     include MyPrettyPrint
 
     def new_value
-        return if @inputs.any? { |input| input.value == '<nil>' }
-        @output.value = @inputs[0].value
+        @outputs.each_with_index do |output, i|
+            # Skip if the value has not changed
+            # Saves computation time by not propagting a false change in value
+            input = @inputs[i % @inputs.length]
+            next if input.value == output.value
+
+            output.value = input.value
+        end
     end
 
     def type_s
-        'direct'
+        'fan'
     end
 end
 

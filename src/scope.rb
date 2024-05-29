@@ -14,11 +14,28 @@ class Scope
     end
 
     def add_subscope(name)
-        if @subscopes.include?(name)
-            raise ArgumentError, "Component #{name} already exists"
-        end
+        return nil if @subscopes.include?(name)
 
         @subscopes[name] = Scope.new(name, self)
+    end
+
+    def find_scope(name)
+        scope = find_scope_down(name)
+
+        return scope unless scope.nil?
+
+        @parent_scope&.find_scope(name)
+    end
+
+    def find_scope_down(name)
+        return self if name == ''
+
+        top_level = name.split('.').first
+        deep_levels = name.split('.')[1..].join('.')
+
+        return @subscopes[top_level].find_scope_down(deep_levels) if @subscopes.key? top_level
+
+        nil
     end
 
     def full_name
@@ -41,7 +58,6 @@ class Scope
         puts ('| ' * level) + @name.light_red
 
         @blueprint.print(level)
-
 
         @subscopes.each_value do |scope| 
             puts '| ' * (level + 1)

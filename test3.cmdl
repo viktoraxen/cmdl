@@ -1,0 +1,38 @@
+
+component A(a, b, c) => x, y
+    component B(a, b, c) => x, y
+        component C(a, b, c, d) => x
+            component F(a, b) => x
+                x <= a and not b
+            end
+
+            signal u <= Asdf(b, c)
+            signal v <= a and d
+
+            x <= u or v
+        end
+
+        x <= a and b
+        y <= b and c or not a
+    end
+
+    component C(a, b) => x
+        component V(a, b) => x
+            x <= not a and b
+        end
+
+        x <= not B.C(a, b)
+    end
+
+    signal u <= B(b, c)
+    signal v <= B(a, c, b, a)
+
+    signal w <= C(u, a)
+
+    x <= u and not v
+    y <= v
+end
+
+signal one <= 1
+signal zero <= 0
+signal dfs, jdsf,first, first <= A(one, zero, one)

@@ -1,0 +1,6 @@
+Varför ska en and/or/not-gate endast ha en output?
+    Kanske göra så att alla gates kan ha godtyckligt antal outputs och att alla
+    outputs påverkas av en värdesförändring. Kanske kan bli av med DirectGate på
+    det sättet!
+
+    Annars göra så att DirectGate kan ha godtyckligt antal inputs och outputs!

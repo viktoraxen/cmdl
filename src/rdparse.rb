@@ -184,9 +184,6 @@ class Parser
                 end # if
             end # raise
         end # until
-
-        # @logger.info "Tokenization finished. Tokens: #{@tokens}"
-        puts ""
     end
 
     def parse(string)

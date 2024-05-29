@@ -11,14 +11,14 @@ class CmdlParser < Parser
 
             token(/\s+/)
 
-            token(/<=/)        { |m| m }
-            token(/=>/)        { |m| m }
-            token(/[(|)]/)     { |m| m }
-            token(/,/)         { |m| m }
-            token(/\./)        { |m| m }
+            token(/<=/)     { |m| m }
+            token(/=>/)     { |m| m }
+            token(/[(|)]/)  { |m| m }
+            token(/,/)      { |m| m }
+            token(/\./)     { |m| m }
 
-            token(/[a-zA-Z]+/) { |m| m }
-            token(/[0|1]/)     { |m| m }
+            token(/[.\w]+/) { |m| m }
+            token(/[0|1]/)  { |m| m }
 
             start :start do
                 match(:statements) { |a| a }
@@ -139,7 +139,7 @@ class CmdlParser < Parser
             end
 
             rule :id do
-                match(/[a-zA-Z]*/) { |a| IdNode.new a }
+                match(/[.\w]*/) { |a| IdNode.new a }
             end
         end
     end

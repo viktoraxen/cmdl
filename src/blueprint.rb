@@ -17,6 +17,10 @@ class Blueprint
             @declared    = false
         end
 
+        def assigned?
+            !@constraint.nil?
+        end
+
         def declare
             Log.debug "Wire #{name}:", 'Declaring'
             @declared = true
@@ -81,7 +85,7 @@ class Blueprint
                 return true
             end
 
-            Log.debug "Wire #{@name}:", 'Not useles', "Connections: #{connections}", "Constraint: #{constraint}"
+            Log.debug "Wire #{@name}:", 'Not useles'
             false
         end
 
@@ -108,14 +112,14 @@ class Blueprint
             @inputs  = []
             @outputs = []
 
-            inputs.each { |input| add_input(input) }
-            outputs.each { |output| add_output(output) }
+            inputs.each { |input| add_input(input, true) }
+            outputs.each { |output| add_output(output, true) }
         end
 
-        def add_input(wire)
-            return if @inputs.include? wire
+        def add_input(wire, force = false)
+            return if @inputs.include?(wire) and not force
 
-            Log.debug "Connection #{name}:", "Adding input #{wire.name} to inputs #{inputs.map(&:name)}"
+            Log.debug "Connection #{name_colorized}:", "Adding input #{wire.name} to inputs #{inputs.map(&:name)}"
 
             @inputs << wire
             wire.add_connection(self)
@@ -124,16 +128,16 @@ class Blueprint
         def remove_input(wire)
             return unless @inputs.include? wire
 
-            Log.debug "Connection #{name}:", "Removing input #{wire.name} from inputs #{inputs.map(&:name)}"
+            Log.debug "Connection #{name_colorized}:", "Removing input #{wire.name} from inputs #{inputs.map(&:name)}"
 
             @inputs.delete(wire)
 
             if @inputs.empty?
 
-                Log.debug "Connection #{name}:", 'Removing all outputs'
+                Log.debug "Connection #{name_colorized}:", 'Removing all outputs'
 
                 until @outputs.empty?
-                    Log.debug "Connection #{name}:", "Removing output #{output.name}"
+                    Log.debug "Connection #{name_colorized}:", "Removing output #{output.name}"
                     output = @outputs.pop
                     output.remove_constraint(self)
                 end
@@ -142,10 +146,10 @@ class Blueprint
             wire.remove_connection(self)
         end
 
-        def add_output(wire)
-            return if @outputs.include? wire
+        def add_output(wire, force = false)
+            return if @outputs.include?(wire) and not force
 
-            Log.debug "Connection #{name}:", "Adding output #{wire.name} to outputs #{outputs.map(&:name)}"
+            Log.debug "Connection #{name_colorized}:", "Adding output #{wire.name} to outputs #{outputs.map(&:name)}"
 
             @outputs << wire
 
@@ -154,17 +158,17 @@ class Blueprint
 
         def remove_output(wire)
             if @outputs.include? wire
-                Log.debug "Connection #{name}:", "Removing output #{wire.name} from outputs #{outputs.map(&:name)}"
+                Log.debug "Connection #{name_colorized}:", "Removing output #{wire.name} from outputs #{outputs.map(&:name)}"
 
                 @outputs.delete(wire)
 
                 if @outputs.empty?
 
-                    Log.debug "Connection #{name}:", 'Removing all inputs'
+                    Log.debug "Connection #{name_colorized}:", 'Removing all inputs'
 
                     until @inputs.empty?
                         input = @inputs.pop
-                        Log.debug "Connection #{name}:", "Removing input #{input.name}"
+                        Log.debug "Connection #{name_colorized}:", "Removing input #{input.name}"
                         input.remove_connection(self)
                     end
                 end
@@ -175,13 +179,21 @@ class Blueprint
 
         def useless?
             if @inputs.empty? && @outputs.empty?
-                Log.debug "Connection #{name}:", 'Useles'
+                Log.debug "Connection #{name_colorized}:", 'Useles'
                 return true
             end
 
-            Log.debug "Connection #{name}:", 'Not useless', "Inputs: #{inputs}", "Outputs: #{outputs}"
+            Log.debug "Connection #{name_colorized}:", 'Not useless'
             false
         end
+
+        # def split
+        #     connections = []
+
+        #     @inputs.each_with_index do |input, i|
+        #     connection = Connection.new(@type, [input])
+        #     end
+        # end
 
         def name
             "#{@type}(#{@inputs.map(&:name).join(',')})"
@@ -231,20 +243,22 @@ class Blueprint
 
         unless connection
             Log.debug "Blueprint #{full_name}:", "Creating connection:\n" \
-                                                 "#{'\t' * 6}type:    #{type}\n" \
-                                                 "#{'\t' * 6}inputs:  #{inputs.map(&:name)}\n" \
-                                                 "#{'\t' * 6}outputs: #{num_outputs}\n"
+                                                 "#{"\t" * 5}type:    #{type}\n" \
+                                                 "#{"\t" * 5}inputs:  #{inputs.map(&:name)}\n" \
+                                                 "#{"\t" * 5}outputs: #{num_outputs}\n"
 
             connection = Connection.new(type, inputs)
 
+            @connections[type] << connection
+        end
+
+        if connection.outputs.size < num_outputs
             # Create output wires
             (0..num_outputs - 1).each do |i|
                 output_wire_name = connection_output_name(connection, i)
                 output_wire = create_internal_wire(output_wire_name)
                 connection.add_output(output_wire)
             end
-
-            @connections[type] << connection
         end
 
         connection
@@ -255,7 +269,7 @@ class Blueprint
         connection = create_connection('direct', inputs, 0)
 
         outputs.each do |output|
-            connection.add_output(output)
+            connection.add_output(output, true)
         end
 
         outputs
@@ -307,6 +321,10 @@ class Blueprint
         nil
     end
 
+    def wire_is_input?(wire)
+        @wires['input']&.include? wire
+    end
+
     def find_connection(type, inputs)
         @connections[type].each do |connection|
             return connection if connection.inputs == inputs
@@ -341,6 +359,8 @@ class Blueprint
 
     def clean_wires
         @wires.each do |type, wires|
+            next unless ['user', 'internal'].include? type
+
             @wires[type] = wires.reject(&:useless?)
         end
     end
@@ -397,7 +417,7 @@ class Blueprint
         end
 
         @wires.each do |type, wires|
-            next if wires.empty? or type == 'declared'
+            next if wires.empty?
 
             indent = '| ' * (level + 1)
             text = "#{type.capitalize} wires".light_blue
