@@ -1,4 +1,4 @@
-signal cout, u, v, w, x # Output signals + carry
+signal cout, u, v, w, x 
 
 cout, u, v, w, x <= Adder(0, 1, 0, 0, 
                           1, 1, 1, 1)
