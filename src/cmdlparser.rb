@@ -17,8 +17,8 @@ class CmdlParser < Parser
             token(/,/)      { |m| m }
             token(/\./)     { |m| m }
 
-            token(/[.\w]+/) { |m| m }
-            token(/[0|1]/)  { |m| m }
+            token(/[a-zA-Z][a-zA-Z_0-9]*/) { |m| m }
+            token(/[0-9]/)                 { |m| m }
 
             start :start do
                 match(:statements) { |a| a }
@@ -43,9 +43,8 @@ class CmdlParser < Parser
                 end
                 match('component', :id, '(', :ids, ')', '=>', :ids,
                       :statements,
-                      'end') do 
-                    |_, id_node, _, input_ids_node, _, _, output_ids_node, statements_node, _|
-                        ComponentNode.new(id_node, input_ids_node, output_ids_node, statements_node)
+                      'end') do|_, id_node, _, input_ids_node, _, _, output_ids_node, statements_node, _|
+                    ComponentNode.new(id_node, input_ids_node, output_ids_node, statements_node)
                 end
             end
 
@@ -129,17 +128,17 @@ class CmdlParser < Parser
                 match(:constant)                  { |constant| ListNode.new(constant) }
             end
 
-            rule :constant do
-                match(/[0|1]/) { |a| ConstantNode.new a }
-            end
-
             rule :ids do
                 match(:ids, ',', :id) { |ids, _, id| ids.add_child(id) }
                 match(:id)            { |id| ListNode.new(id) }
             end
 
             rule :id do
-                match(/[.\w]*/) { |a| IdNode.new a }
+                match(/^[a-zA-Z][a-zA-Z0-9_]*$/) { |a| IdNode.new a }
+            end
+
+            rule :constant do
+                match(/^[0-9]+$/) { |a| ConstantNode.new a }
             end
         end
     end
