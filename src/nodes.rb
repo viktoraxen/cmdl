@@ -66,6 +66,12 @@ class Node
     end
 end
 
+class AssigneeNode < Node
+    def evaluate(*)
+
+    end
+end
+
 class AssignNode < Node
     def signal_ids_node
         @children[0]
@@ -199,17 +205,21 @@ class ConstantNode < Node
     def evaluate(*)
         Log.debug 'ConstantNode.evaluate:', " #{value}"
 
-        value == '1' ? 'VCC' : 'GND'
+        value
     end
 end
 
-class DeclareNode < Node
+class DeclarationNode < Node
     def signal_ids_node
         @children[0]
     end
 
+    def expressions_node
+        @children[1]
+    end
+
     def evaluate(scope, *)
-        Log.debug 'DeclareNode.evaluate:', " #{signal_ids_node}"
+        Log.debug 'DeclarationNode.evaluate:', signal_ids_node.to_s, expressions_node.to_s
 
         wires = signal_ids_node.evaluate(scope)
         declared_wires = wires.select(&:declared)
@@ -221,8 +231,19 @@ class DeclareNode < Node
             raise DuplicateSignalDeclarationException.new(declared_wires.map(&:name), scope)
         end
 
+        # Declare the wires
         wires.each { |wire| scope.blueprint.declare_wire(wire) }
+
+        return wires if expressions_node.nil?
+
+        expr_output_wires = expression_node.evaluate(scope, wires.size)
+
+        # Assign the wires if expressions are given
+        scope.blueprint.assign_wires(expr_output_wires, declare_wires)
     end
+end
+
+class DeclaratorNode < Node
 end
 
 class DefineNode < Node
@@ -256,7 +277,7 @@ class DefineNode < Node
     end
 end
 
-class IdNode < Node
+class IdentifierNode < Node
     def value
         @children[0]
     end
@@ -268,11 +289,38 @@ class IdNode < Node
     end
 end
 
+class IndexedSignalNode < Node
+    def id_node
+        @children[0]
+    end
+
+    def index_node
+        @children[1]
+    end
+
+    def evaluate(scope, *)
+        Log.debug 'IndexedSignalNode.evaluate:', id_node.to_s, index_node.to_s
+
+        id = id_node.evaluate
+        index = index_node.evaluate(scope)
+
+        scope.blueprint.find_wire(id, index)
+    end
+end
+
 class ListNode < Node
     def evaluate(*args)
         Log.debug 'ListNode.evaluate:', @children.to_s
 
         @children.map { |child| child.evaluate(*args) }
+    end
+end
+
+class NumberNode < Node
+    def evaluate(*)
+        Log.debug 'NumberNode.evaluate:', @value.to_s
+
+        @value.to_i
     end
 end
 
@@ -285,7 +333,7 @@ class SignalNode < Node
         # TODO: Add dynamic scope search. Search through parent scope until found
         Log.debug 'SignalNode.evaluate:', 'Getting signal', id_node.to_s
 
-        scope.blueprint.create_wire(id_node.evaluate)
+        scope.blueprint.find_wire(id_node.evaluate)
     end
 end
 

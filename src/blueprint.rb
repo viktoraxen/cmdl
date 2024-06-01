@@ -187,14 +187,6 @@ class Blueprint
             false
         end
 
-        # def split
-        #     connections = []
-
-        #     @inputs.each_with_index do |input, i|
-        #     connection = Connection.new(@type, [input])
-        #     end
-        # end
-
         def name
             "#{@type}(#{@inputs.map(&:name).join(',')})"
         end
@@ -276,7 +268,7 @@ class Blueprint
     end
 
     def create_wire(name, type = 'user')
-        @wires[type] ||= []
+        @wires[type] ||= {}
 
         wire = find_wire(name)
 
@@ -315,10 +307,22 @@ class Blueprint
 
     def find_wire(name)
         @wires.each_value do |wires|
-            found_wire = wires.find { |w| w.name == name }
-            return found_wire if found_wire
+            wire_name, index = wire_name_and_index(name)
+
+            next unless wires.key? wire_name
+
+            return found_wire[index]
         end
+
         nil
+    end
+
+    def wire_name_and_index(name)
+        return [name, 0] unless ['[', ']'].map { |s| name.include? s }.any?
+
+        name, index = name.split('[')
+        index = index[..-1].to_i
+        [name, index]
     end
 
     def wire_is_input?(wire)

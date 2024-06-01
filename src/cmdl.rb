@@ -13,11 +13,11 @@ def cmdl_file(filename, print_all)
 
     string = File.read(filename)
     tree = parser.parse(string)
-    tree.print
-    root = tree.evaluate(Scope.new('root'))
+    # tree.print
+    # root = tree.evaluate(Scope.new('root'))
 
-    network = Network.create_network(root)
-    network.print(print_all: print_all)
+    # network = Network.create_network(root)
+    # network.print(print_all: print_all)
 end
 
 if ARGV.empty?
