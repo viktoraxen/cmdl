@@ -2,7 +2,7 @@
 
 require 'colorize'
 
-require_relative 'log'
+require_relative 'log/log'
 
 class Blueprint
     class Wire
@@ -81,11 +81,11 @@ class Blueprint
 
         def useless?
             if @connections.empty? && @constraint.nil?
-                Log.debug "Wire #{@name}:", 'Useless'
+                # Log.debug "Wire #{@name}:", 'Useless'
                 return true
             end
 
-            Log.debug "Wire #{@name}:", 'Not useles'
+            # Log.debug "Wire #{@name}:", 'Not useles'
             false
         end
 
@@ -227,6 +227,10 @@ class Blueprint
         create_internal_wire('GND')
     end
 
+    #
+    # Connections: Actions
+    #
+
     def create_connection(type, inputs, num_outputs = 1)
         @connections[type] ||= []
 
@@ -256,124 +260,21 @@ class Blueprint
         connection
     end
 
-    def assign_wires(inputs, outputs)
-        Log.debug "Blueprint #{full_name}:", 'Assigning wires', "Inputs: #{inputs.map(&:name)}", "Outputs: #{outputs.map(&:name)}"
-        connection = create_connection('direct', inputs, 0)
-
-        outputs.each do |output|
-            connection.add_output(output, true)
-        end
-
-        outputs
-    end
-
-    def create_wire(name, type = 'user')
-        @wires[type] ||= {}
-
-        wire = find_wire(name)
-
-        unless wire
-            Log.debug "Blueprint #{full_name}:", "Creating #{type} wire #{name}"
-
-            wire = Wire.new(name, type)
-
-            Log.debug "Blueprint #{full_name}:", "Created wire #{wire.name}"
-            @wires[type] << wire
-        end
-
-        wire
-    end
-
-    def create_internal_wire(name)
-        create_wire(name, 'internal')
-    end
-
-    def create_input_wire(name)
-        create_wire(name, 'input')
-    end
-
-    def create_output_wire(name)
-        create_wire(name, 'output')
-    end
-
-    def declare_wire(wire)
-        return if wire.declared
-
-        Log.debug "Blueprint #{full_name}:", "Declaring wire #{wire.name}"
-
-        wire.declare
-        wire
-    end
-
-    def find_wire(name)
-        @wires.each_value do |wires|
-            wire_name, index = wire_name_and_index(name)
-
-            next unless wires.key? wire_name
-
-            return found_wire[index]
-        end
-
-        nil
-    end
-
-    def wire_name_and_index(name)
-        return [name, 0] unless ['[', ']'].map { |s| name.include? s }.any?
-
-        name, index = name.split('[')
-        index = index[..-1].to_i
-        [name, index]
-    end
-
-    def wire_is_input?(wire)
-        @wires['input']&.include? wire
-    end
+    #
+    # Connections: Finders
+    #
 
     def find_connection(type, inputs)
         @connections[type].each do |connection|
             return connection if connection.inputs == inputs
         end
+
         nil
     end
-
-    def undeclared_wires
-        Log.debug "Blueprint #{full_name}:", 'Finding undeclared wires'
-        undeclared_wires = []
-
-        @wires.each do |type, wires|
-            next if ['declared', 'internal'].include? type
-
-            wires.each do |wire|
-                next if wire.declared
-
-                Log.debug "Blueprint #{full_name}:", " Found undeclared wire #{wire.name}"
-                undeclared_wires << wire
-            end
-        end
-
-        undeclared_wires
-    end
-
-    def cleanup
-        Log.debug "Blueprint #{full_name}:", 'Cleaning up blueprint'
-
-        clean_wires
-        clean_connections
-    end
-
-    def clean_wires
-        @wires.each do |type, wires|
-            next unless ['user', 'internal'].include? type
-
-            @wires[type] = wires.reject(&:useless?)
-        end
-    end
-
-    def clean_connections
-        @connections.each do |type, connections|
-            @connections[type] = connections.reject(&:useless?)
-        end
-    end
+    
+    #
+    # Connections: Helpers
+    #
 
     def connection_output_name(connection, i = 0)
         if ['not', 'and', 'or'].include? connection.type
@@ -406,6 +307,160 @@ class Blueprint
         raise ArgumentError, "Unknown gate type #{type}"
     end
 
+    #
+    # Wires: Actions
+    #
+
+    def create_wire(name, size, type = :user)
+        @wires[type] ||= {}
+
+        return find_wire(name) if wire_exists?(name)
+
+        Log.debug "Blueprint #{full_name}:", "Creating #{type} wire #{name}[#{size}]"
+
+        if size.nil?
+            @wires[type][name] = {
+                wires:    [Wire.new(name, type)],
+                declared: false
+            }
+
+            return name
+        end
+
+        @wires[type][name] = {
+            wires:    [],
+            declared: false
+        }
+
+        (0..size - 1).each do |i|
+            @wires[type][name][:wires] << Wire.new("#{name}[#{i}]", type)
+        end
+
+        name
+    end
+
+    def create_internal_wire(name)
+        create_wire(name, nil, :internal)
+    end
+
+    def create_input_wire(name, size)
+        create_wire(name, size, :input)
+    end
+
+    def create_output_wire(name, size)
+        create_wire(name, size, :output)
+    end
+
+    def declare_wire(name)
+        return if !wire_exists? name or wire_declared? name
+
+        Log.debug "Blueprint #{full_name}:", "Declaring wire #{name}"
+
+        find_wire(name)[:declared] = true
+    end
+
+    def assign_wires(inputs, outputs)
+        Log.debug "Blueprint #{full_name}:", 'Assigning wires', "Inputs: #{inputs.map(&:name)}", "Outputs: #{outputs.map(&:name)}"
+        connection = create_connection('direct', inputs, 0)
+
+        outputs.each do |output|
+            connection.add_output(output, true)
+        end
+
+        outputs
+    end
+
+    #
+    # Wires: Queries
+    #
+
+    def wire_exists?(name)
+        @wires.each_value do |wires|
+            return true if wires.key? name
+        end
+
+        false
+    end
+
+    def wire_declared?(name)
+        wire = find_wire(name)
+        return false if wire.nil?
+
+        wire[:declared]
+    end
+
+    def wire_is_input?(wire)
+        @wires['input']&.include? wire
+    end
+
+    def wire_useless?(name)
+        return true unless wire_exists? name
+
+        wire = find_wire(name)
+
+        wire[:wires].map(&:useless?).any?
+    end
+
+    #
+    # Wires: Finders
+    #
+
+    def find_wire(name, index = nil)
+        @wires.each_value do |wires|
+            return wires[name] if wires.key? name
+        end
+
+        nil
+    end
+
+    def undeclared_wires
+        Log.debug "Blueprint #{full_name}:", 'Finding undeclared wires'
+        undeclared_wires = []
+
+        @wires.each do |type, wires|
+            next if type == :internal
+
+            wires.each_key do |name|
+                next if wire_declared? name
+
+                Log.debug "Blueprint #{full_name}:", "Found undeclared wire #{name}"
+
+                undeclared_wires << name
+            end
+        end
+
+        undeclared_wires
+    end
+
+    #
+    # Cleanup
+    #
+
+    def cleanup
+        Log.debug "Blueprint #{full_name}:", 'Cleaning up blueprint'
+
+        # clean_wires
+        clean_connections
+    end
+
+    def clean_wires
+        @wires.each do |type, wires|
+            next unless %i[user internal].include? type
+
+            @wires[type] = wires.reject { |w| wire_useless? w }
+        end
+    end
+
+    def clean_connections
+        @connections.each do |type, connections|
+            @connections[type] = connections.reject(&:useless?)
+        end
+    end
+
+    #
+    # Print
+    #
+
     def print(level = 0)
         text = 'Connections'.light_blue
         puts ('| ' * (level + 1)) + text unless @connections.empty?
@@ -428,8 +483,10 @@ class Blueprint
 
             puts "#{indent}#{text}"
 
-            wires.each do |wire|
-                puts "#{indent}| #{wire.name}"
+            wires.each do |name, wire|
+                string = "#{name}, #{wire[:wires].size}"
+                string = string.colorize(:light_red) if wire_useless? name
+                puts "#{indent}| #{string}"
             end
         end
     end

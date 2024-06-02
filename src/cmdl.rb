@@ -2,19 +2,20 @@
 
 # frozen_string_literal: true
 
-require_relative 'cmdlparser'
+require_relative 'parser/cmdlparser'
 require_relative 'network'
-require_relative 'log'
+require_relative 'log/log'
 
-Log.initialize(Logger::INFO)
+Log.initialize(Logger::DEBUG)
 
 def cmdl_file(filename, print_all)
     parser = CmdlParser.new(Logger::ERROR)
 
     string = File.read(filename)
     tree = parser.parse(string)
-    # tree.print
+    tree.print
     # root = tree.evaluate(Scope.new('root'))
+    # root.print
 
     # network = Network.create_network(root)
     # network.print(print_all: print_all)
