@@ -10,7 +10,7 @@ end
 
 class NumberNode < LeafNode
     def evaluate(*)
-        Log.debug 'NumberNode.evaluate:', @value.to_s
+        debug_log
 
         @value.to_i
     end

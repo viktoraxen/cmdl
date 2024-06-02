@@ -16,13 +16,20 @@ class BinaryExpressionNode < Node
     end
 
     def evaluate(scope, *)
-        Log.debug 'BinaryExpressionNode.evaluate:', lh_expr_node.to_s, op_node.to_s, rh_expr_node.to_s
+        debug_log
 
         lh_output_wires = lh_expr_node.evaluate(scope)
-        rh_output_wires = rh_expr_node.evaluate(scope)
-        operation = op_node.evaluate
+        debug_log "Left Output Wires:", lh_output_wires
 
-        scope.blueprint.create_connection(operation, lh_output_wires + rh_output_wires).outputs
+        rh_output_wires = rh_expr_node.evaluate(scope)
+        debug_log "Right Output Wires:", rh_output_wires
+
+        operation = op_node.evaluate
+        debug_log "Operation", lh_output_wires
+
+        "#{lh_output_wires} #{operation} #{rh_output_wires}"
+
+        # scope.blueprint.create_connection(operation, lh_output_wires + rh_output_wires).outputs
     end
 end
 
@@ -36,12 +43,16 @@ class ComponentExpressionNode < Node
     end
 
     def evaluate(scope, num_outputs = 1, *)
-        Log.debug 'ComponentExpressionNode.evaluate:', component_id_node.to_s, inputs_node.to_s
+        debug_log
 
         comp_id     = component_id_node.evaluate
-        input_wires = inputs_node.evaluate(scope)
+        debug_log "Component Id:", comp_id
 
-        scope.blueprint.create_connection(comp_id, input_wires, num_outputs).outputs[0..num_outputs - 1]
+        input_wires = inputs_node.evaluate(scope)
+        debug_log "Input Wires:", input_wires
+
+        "#{comp_id}(#{input_wires.join(', ')})"
+        # scope.blueprint.create_connection(comp_id, input_wires, num_outputs).outputs[0..num_outputs - 1]
     end
 end
 
@@ -58,11 +69,17 @@ class UnaryExpressionNode < Node
     end
 
     def evaluate(scope, *)
-        Log.debug 'UnaryExpressionNode.evaluate:', op_node.to_s, expr_node.to_s
+        debug_log
 
         expr_output_wires = expr_node.evaluate(scope)
-        operation         = op_node.evaluate
 
-        scope.blueprint.create_connection(operation, expr_output_wires).outputs
+        debug_log "Expression Output Wires:", expr_output_wires
+
+        operation = op_node.evaluate
+
+        debug_log "Operation:", operation
+
+        "#{operation} #{expr_output_wires}"
+        # scope.blueprint.create_connection(operation, expr_output_wires).outputs
     end
 end

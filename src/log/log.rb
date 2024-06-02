@@ -28,7 +28,7 @@ class Log
         message = ''
 
         args.each_with_index do |arg, i|
-            message += "#{arg.colorize(@@colors[i % @@colors.size])} "
+            message += "#{arg.to_s.colorize(@@colors[i % @@colors.size])} "
         end
 
         message

@@ -5,16 +5,30 @@ require_relative '../scope'
 require_relative '../cmdl_exceptions'
 
 class Node
-    attr_accessor :value, :children
+    DEBUG_PRINT_WIDTH = 30
+
+    attr_accessor :value, :children, :parent
 
     def initialize(*children, value: nil)
         @value    = value
         @children = children
+        @parent   = nil
+        @children.each { |child| child&.parent = self }
     end
 
     def add_child(child)
         @children << child
-        self
+        child.parent = self
+    end
+
+    def root?
+        @parent.nil?
+    end
+
+    def depth
+        return 0 if root?
+
+        @parent.depth + 1
     end
 
     # Deep compare of nodes
@@ -37,6 +51,12 @@ class Node
         @value == other.value
     end
 
+    def debug_log(*msg)
+        msg = *@children.map(&:to_s) if msg.empty?
+
+        Log.debug "#{' ' * depth}#{self.class.to_s}:".ljust(DEBUG_PRINT_WIDTH), *msg
+    end
+
     def leaf?
         @children.empty?
     end
@@ -49,12 +69,12 @@ class Node
         self.class.to_s
     end
 
-    def print(level = 0)
-        puts ('|  ' * level) + to_s
+    def print
+        puts ('|  ' * depth) + to_s
 
-        puts ('|  ' * (level + 1)) + @value.to_s if leaf?
+        puts ('|  ' * (depth + 1)) + @value.to_s if leaf?
 
-        children.each { |child| child&.print(level + 1) }
+        children.each { |child| child&.print }
     end
 
     def evaluate(*)
@@ -63,29 +83,39 @@ class Node
 end
 
 class LeafNode < Node
+    def debug_log(msg = nil)
+        super(@value.to_s) if msg.nil?
+        super(msg) unless msg.nil?
+    end
+
     def initialize(value)
         super(value: value)
     end
 
     def evaluate(*)
-        Log.debug "#{self.class}.evaluate:", @value.to_s
+        debug_log
 
         @value
     end
 end
 
-class FlatListNode < Node
-    def evaluate(*args)
-        Log.debug 'FlatListNode.evaluate:', @children.to_s
+class ListNode < Node
+    def debug_log(msg = nil)
+        super(@children.map(&:to_s)) if msg.nil?
+        super(msg) unless msg.nil?
+    end
 
-        @children.map { |child| child.evaluate(*args) }.flatten
+    def evaluate(*args)
+        debug_log
+
+        @children.map { |child| child.evaluate(*args) }
     end
 end
 
-class ListNode < Node
+class FlatListNode < Node
     def evaluate(*args)
-        Log.debug 'ListNode.evaluate:', @children.to_s
+        debug_log
 
-        @children.map { |child| child.evaluate(*args) }
+        @children.map { |child| child.evaluate(*args) }.flatten
     end
 end

@@ -20,7 +20,7 @@ class CmdlParser < Parser
             token(/:/)      { |m| m }
 
             token(/[a-zA-Z][a-zA-Z_0-9]*/) { |m| m }
-            token(/[0-9]/)                 { |m| m }
+            token(/[0-9]+/)                { |m| m }
 
             start :source_file do
                 match(:code_block) { |a| a }
@@ -175,8 +175,8 @@ class CmdlParser < Parser
             #
             
             rule :subscript do
-                match(:identifier, '[', :span,  ']') { |id, _, span, _ | SubscriptNode.new(id, span)  }
-                match(:identifier, '[', :index, ']') { |id, _, index, _| SubscriptNode.new(id, index) }
+                match(:identifier, '[', :span,  ']') { |id, _, span, _ | SubscriptSpanNode.new(id, span)  }
+                match(:identifier, '[', :index, ']') { |id, _, index, _| SubscriptIndexNode.new(id, index) }
             end
 
             rule :span do
@@ -186,7 +186,7 @@ class CmdlParser < Parser
             end
 
             rule :index do
-                match(:number) { |start| IndexNode.new(start) }
+                match(:number) { |index| IndexNode.new(index) }
             end
 
             #
