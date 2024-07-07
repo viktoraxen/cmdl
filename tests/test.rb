@@ -19,6 +19,13 @@ class TestFile
         finished: '',
         warning:  ''
     }
+    @@stop_stage_symbols = {
+        1 => '󰯃',
+        2 => '󰹩',
+        3 => ''
+    }
+
+    attr_reader :total_time
 
     def initialize(filepath, tests_dir = File.join(File.dirname(__FILE__), 'run'))
         file_content = File.read(File.join(tests_dir, filepath))
@@ -35,21 +42,26 @@ class TestFile
         @passed_tests  = 0
         @failed_tests  = 0
         @total_tests   = @tests.length
+
+        @total_time = 0
     end
 
     def run_tests
-        puts "Running test file #{@title}"
+        _std_puts "Running test file #{@title}"
 
         @tests.each do |test|
             result, symbol, exception = test.run
 
+            @total_time += test.elapsed_time unless test.elapsed_time.nil?
+
             color = @@colors[result]
             symbol = @@symbols[symbol]
+            stop_stage = @@stop_stage_symbols[test.stop_stage]
 
-            result_str = "#{symbol}: #{test.name}".colorize(color)
-            result_str += " - #{exception.to_s.strip}" unless exception.nil?
+            result_str = "#{symbol} #{stop_stage}: #{test.name}".colorize(color)
+            result_str += " - #{exception.class}: #{exception.to_s.strip}" unless exception.nil?
 
-            puts "#{@@indent}#{result_str}"
+            _std_puts "#{@@indent}#{result_str}"
 
             @skipped_tests += 1 if result == :skipped
             @warnings      += 1 if result == :warning
@@ -71,12 +83,17 @@ class TestFile
 
         result_str = [skip_str, warning_str, failed_str, passed_str, total_str].join(' / ')
 
-        puts "#{@@indent}#{result_str}"
+        _std_puts "#{@@indent}Elapsed time: #{@total_time.round(2)} ms"
+        _std_puts "#{@@indent}#{result_str}"
+    end
+
+    def _std_puts(str)
+        STDOUT.puts str
     end
 end
 
 class Test
-    attr_reader :name, :should_finish, :skip
+    attr_reader :name, :should_finish, :skip, :elapsed_time, :stop_stage
 
     def initialize(name, tags, content, parser = CmdlParser.new(Logger::ERROR))
         @name    = name
@@ -89,6 +106,7 @@ class Test
         @should_finish    = params[:should_finish]
         @valid_exceptions = params[:valid_exceptions]
         @skip             = params[:skip]
+        @stop_stage       = params[:stop_stage]
 
         @tree       = nil
         @root_scope = nil
@@ -99,20 +117,28 @@ class Test
 
     def run
         return :skipped, :skipped if @skip
-        return :warning, :warning, "Test content empty" if content_empty
+        return :warning, :warning, "Test content empty" if @content.strip.empty?
+
+        t0 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
 
         begin
             parse
-            evaluate
-            # synthesize
+            evaluate unless @stop_stage < 2
+            synthesize unless @stop_stage < 3
         rescue *@valid_exceptions
-            return :success, :threw
+            result = :success, :threw
         rescue => e
-            return :failure, :threw, e
+            result = :failure, :threw, e
         else 
-            return :success, :finished if @should_finish
-            return :failure, :finished
+            result = :failure, :finished
+            result = :success, :finished if @should_finish
+        ensure
+            t1 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+
+            @elapsed_time = (t1 - t0) * 1000
         end
+
+        return result
     end
 
     def parse
@@ -124,8 +150,7 @@ class Test
     end
 
     def synthesize
-        @network = Network.new('root')
-        @network.parse_template(@root_scope.template)
+        @network = @root_scope.synthesize
     end
 
     def content_empty
@@ -144,15 +169,26 @@ class Test
         params = {
             should_finish:    true,
             valid_exceptions: [],
-            skip:             false
+            skip:             false,
+            stop_stage:       3
         }
-
 
         return params if tags.nil?
 
         tags = tags.lines.map(&:strip).select { |line| line.start_with?('<') }.map { |line| line[1..].strip }
 
         params[:skip] = tags.include? 'skip'
+
+        stop_tag = tags.find { |tag| tag =~ /^until.*$/ }
+        stop_stage = stop_tag&.scan(/until\s*:\s*([A-Za-z0-9_]+)/)&.flatten&.first
+
+        stop_stage_map = {
+            'parse'      => 1,
+            'evaluate'   => 2,
+            'synthesize' => 3
+        }
+
+        params[:stop_stage] = stop_stage_map[stop_stage] unless stop_stage.nil?
 
         fail_tag = tags.find { |tag| tag =~ /^fail.*$/ }
 

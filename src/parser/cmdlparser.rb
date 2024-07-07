@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require_relative 'rdparse'
-require_relative '../nodes/nodes'
+require_relative '../syntaxtree/syntaxtree'
 
 class CmdlParser < Parser
     def initialize(log_level = Logger::DEBUG)
@@ -17,19 +17,26 @@ class CmdlParser < Parser
             token(/[\[|\]]/) { |m| m }
             token(/,/)       { |m| m }
             token(/\./)      { |m| m }
-            token(/:/)      { |m| m }
+            token(/:/)       { |m| m }
 
             token(/[a-zA-Z][a-zA-Z_0-9]*/) { |m| m }
-            token(/[0-9]+/)                { |m| m }
+            token(/-?\d+/)                 { |m| m }
+            token(/[01]+/)                 { |m| m }
 
             start :source_file do
-                match(:code_block) { |a| a }
+                match(:code_block) { |root| SyntaxTree.new(RootNode.new(root)) }
             end
 
             rule :code_block do
-                match(:code_block, :statement) { |node, statement| node.add_child(statement) }
-                match(:statement)              { |statement      | CodeBlockNode.new(statement) }
-                match                          { CodeBlockNode.new() }
+                # match(:code_block, :statement) { |node, statement| node.add_child(statement) }
+                # match(:statement)              { |statement      | CodeBlockNode.new(statement) }
+                match(:statements) { |statements| CodeBlockNode.new(statements) }
+                match              { CodeBlockNode.new() }
+            end
+
+            rule :statements do
+                match(:statements, :statement) { |statements, statement| statements.add_child(statement) }
+                match(:statement)              { |statement              | StatementListNode.new(statement) }
             end
 
             rule :statement do
@@ -56,12 +63,12 @@ class CmdlParser < Parser
 
             rule :component_inputs do
                 match(:component_inputs, ',', :component_input) { |inputs, _, input| inputs.add_child(input) }
-                match(:component_input)                         { |input            | ComponentInputListNode.new(input) }
+                match(:component_input)                         { |input           | ComponentInputListNode.new(input) }
             end
 
             rule :component_input do
-                match(:subscript)  { |a| a }
-                match(:identifier) { |a| a }
+                match(:identifier, ':', :number) { |id, _, width| ComponentInputSubscriptNode.new(id, width) }
+                match(:identifier)               { |id          | ComponentInputNode.new(id)                 }
             end
 
             rule :component_outputs do
@@ -70,14 +77,14 @@ class CmdlParser < Parser
             end
 
             rule :component_output do
-                match(:subscript)  { |a| a }
-                match(:identifier) { |a| a }
+                match(:identifier, ':', :number) { |id, _, width| ComponentOutputSubscriptNode.new(id, width) }
+                match(:identifier)               { |id|           ComponentOutputNode.new(id)                 }
             end
 
             #
             # Declaration
-            # [Id] <= [Id]
-            # [Id]
+            # [Decl] <= [Ref]
+            # [Decl]
             #
 
             rule :declaration do
@@ -95,34 +102,34 @@ class CmdlParser < Parser
             end
 
             rule :declarator do
-                match(:subscript)  { |a| a }
-                match(:identifier) { |a| a }
+                match(:identifier, ':', :number) { |id, _, width| DeclaratorSubscriptNode.new(id, width) }
+                match(:identifier)               { |id          | DeclaratorNode.new(id)             }
             end
 
             #
             # Assignment
-            # [Id] <= [Id]
+            # [Ref] <= [Ref]
             #
 
             rule :assignment do
-                match(:assignees, '<=', :expressions) do |ids, _, expr|
+                match(:receivers, '<=', :expressions) do |ids, _, expr|
                     AssignNode.new(ids, expr)
                 end
             end
 
-            rule :assignees do
-                match(:assignees, ',', :assignee) { |ids, _, id| ids.add_child(id) }
-                match(:assignee)                  { |id        | AssigneeListNode.new(id)  }
+            rule :receivers do
+                match(:receivers, ',', :receiver) { |ids, _, id| ids.add_child(id) }
+                match(:receiver)                  { |id        | AssignmentReceiverListNode.new(id)  }
             end
 
-            rule :assignee do
-                match(:subscript)  { |a| a }
-                match(:identifier) { |a| a }
+            rule :receiver do
+                match(:identifier, :subscript) { |id, subs| AssignmentReceiverSubscriptNode.new(id, subs) }
+                match(:identifier)             { |id      | AssignmentReceiverNode.new(id)                }
             end
 
             #
             # Expressions
-            # [Id]
+            # [Ref]
             #
 
             rule :expressions do
@@ -136,53 +143,57 @@ class CmdlParser < Parser
 
             rule :expression_or do
                 match(:expression_or, 'or', :expression_and) do |lh, op, rh|
-                    BinaryExpressionNode.new(lh, ConstantNode.new(op), rh)
+                    BinaryExpressionNode.new(lh, StringNode.new(op), rh)
                 end
                 match(:expression_and) { |expr| expr }
             end
 
             rule :expression_and do
                 match(:expression_and, 'and', :expression_not) do |lh, op, rh|
-                    BinaryExpressionNode.new(lh, ConstantNode.new(op), rh)
+                    BinaryExpressionNode.new(lh, StringNode.new(op), rh)
                 end
                 match(:expression_not) { |expr| expr }
             end
 
             rule :expression_not do
                 match('not', :expression_not) do |op, expr|
-                    UnaryExpressionNode.new(ConstantNode.new(op), expr)
+                    UnaryExpressionNode.new(StringNode.new(op), expr)
                 end
-                match(:expression_component) { |expr| expr }
+                match(:expression_subscript) { |expr| expr }
+            end
+
+            rule :expression_subscript do
+                match(:expression_subscript, :subscript) { |expr, subs| ExpressionSubscriptNode.new(expr, subs) }
+                match(:expression_component)             { |expr      | expr                                    }
             end
 
             rule :expression_component do
-                match(:identifier, '(', :expressions, ')') do |component_id, _, inputs, _|
+                match(:identifier_dotsep, '(', :expressions, ')') do |component_id, _, inputs, _|
                     ComponentExpressionNode.new(component_id, inputs)
                 end
                 match(:expression_primary) { |expr| expr }
             end
 
             rule :expression_primary do
-                match('(', :expression, ')') { |_, expr, _| expr }
-                match(:subscript)            { |a| a }
-                match(:identifier)           { |a| a }
-                match(:number)               { |a| a }
+                match('(', :expressions, ')') { |_, expr, _| expr                              }
+                match(:constant)              { |const     | ExpressionConstantNode.new(const) }
+                match(:identifier)            { |id        | ExpressionIdentifierNode.new(id)  }
             end
 
             #
             # Subscript
-            # [Id, Span]
+            # [Ref, Span]
             #
             
             rule :subscript do
-                match(:identifier, '[', :span,  ']') { |id, _, span, _ | SubscriptSpanNode.new(id, span)  }
-                match(:identifier, '[', :index, ']') { |id, _, index, _| SubscriptIndexNode.new(id, index) }
+                match('[', :span,  ']') { |_, span, _ | span  }
+                match('[', :index, ']') { |_, index, _| index }
             end
 
             rule :span do
-                match(:number, ':', :number) { |start, _, stop| SpanNode.new(start,             stop)               }
-                match(':', :number)          { |_, stop       | SpanNode.new(NumberNode.new(0), stop)               }
-                match(:number, ':')          { |start, _      | SpanNode.new(start,             NumberNode.new(-1)) }
+                match(:number, ':', :number) { |start, _, stop| SpanNode.new(start, stop) }
+                match(':', :number)          { |_, stop       | SpanNode.new(nil,   stop) }
+                match(:number, ':')          { |start, _      | SpanNode.new(start, nil)  }
             end
 
             rule :index do
@@ -194,6 +205,11 @@ class CmdlParser < Parser
             # [Id]
             #
 
+            rule :identifier_dotsep do
+                match(:identifier_dotsep, '.', :identifier) { |ids, _, id| ids.append_id(".#{id.value}"); ids }
+                match(:identifier)                          { |id        | id }
+            end
+
             rule :identifiers do
                 match(:identifiers, ',', :identifier) { |ids, _, id| ids.add_child(id) }
                 match(:identifier)                    { |id| IdentifierListNode.new(id) }
@@ -203,13 +219,21 @@ class CmdlParser < Parser
                 match(/^[a-zA-Z][a-zA-Z0-9_]*$/) { |a| IdentifierNode.new(a) }
             end
 
-            rule :numbers do
-                match(:numbers, ',', :number) { |numbers, _, number| numbers.add_child(number) }
-                match(:number)                { |number            | NumberListNode.new(number) }
+            rule :constant do
+                match(:decimal, ':', :decimal) { |num, _, width| ConstantSubscriptNode.new(num, width) }
+                match(:decimal)                { |num          | ConstantNode.new(num)                 }
             end
 
             rule :number do
-                match(/^[0-9]+$/) { |a| NumberNode.new(a) }
+                match(:decimal) { |a| a }
+            end
+
+            rule :binary do
+                match('b', /[01]+/) { |number| BinaryNumberNode.new(number) }
+            end
+
+            rule :decimal do
+                match(/-?\d+/) { |a| NumberNode.new(a) }
             end
         end
     end

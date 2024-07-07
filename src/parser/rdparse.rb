@@ -9,6 +9,8 @@
 #   of turning on and off debug messages.
 # 2014-02-16 New version that handles { false } blocks and :empty tokens.
 
+require_relative '../error/cmdlerrors'
+
 require 'logger'
 
 class Rule
@@ -132,12 +134,8 @@ class Rule
 end
 
 class Parser
-
     attr_accessor :pos, :logger
     attr_reader :rules, :string, :tokens
-
-    class ParseError < RuntimeError
-    end
 
     def initialize(language_name, log_level = Logger::DEBUG, &block)
         @logger = Logger.new($stdout)
@@ -163,7 +161,8 @@ class Parser
         until string.empty?
             # Unless any of the valid tokens of our language are the prefix of
             # 'string', we fail with an exception
-            raise ParseError, "unable to lex '#{string}" unless @lex_tokens.any? do |tok|
+            raise ParseError, 
+                "unable to lex '#{string}" unless @lex_tokens.any? do |tok|
                 match = tok.pattern.match(string)
                 # The regular expression of a token has matched the beginning of 'string'
                 if match
@@ -202,7 +201,8 @@ class Parser
         result = @start.parse
         # If there are unparsed extra tokens, signal error
         if @pos != @tokens.size
-            raise ParseError, "Parse error. expected: '#{@expected.join(', ')}', found '#{@tokens[@max_pos]}'"
+        raise ParseError,
+                "Parse error. expected: '#{@expected.join(', ')}', found '#{@tokens[@max_pos]}'"
         end
         return result
     end

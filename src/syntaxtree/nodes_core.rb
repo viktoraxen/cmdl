@@ -2,11 +2,8 @@
 
 require_relative '../log/log'
 require_relative '../scope'
-require_relative '../cmdl_exceptions'
 
-class Node
-    DEBUG_PRINT_WIDTH = 30
-
+class ASTNode
     attr_accessor :value, :children, :parent
 
     def initialize(*children, value: nil)
@@ -54,7 +51,7 @@ class Node
     def debug_log(*msg)
         msg = *@children.map(&:to_s) if msg.empty?
 
-        Log.debug "#{' ' * depth}#{self.class.to_s}:".ljust(DEBUG_PRINT_WIDTH), *msg
+        Log.debug "#{' ' * depth}#{self.class}:", *msg
     end
 
     def leaf?
@@ -82,7 +79,7 @@ class Node
     end
 end
 
-class LeafNode < Node
+class LeafNode < ASTNode
     def debug_log(msg = nil)
         super(@value.to_s) if msg.nil?
         super(msg) unless msg.nil?
@@ -99,7 +96,7 @@ class LeafNode < Node
     end
 end
 
-class ListNode < Node
+class ListNode < ASTNode
     def debug_log(msg = nil)
         super(@children.map(&:to_s)) if msg.nil?
         super(msg) unless msg.nil?
@@ -112,7 +109,7 @@ class ListNode < Node
     end
 end
 
-class FlatListNode < Node
+class FlatListNode < ASTNode
     def evaluate(*args)
         debug_log
 

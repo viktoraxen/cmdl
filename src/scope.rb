@@ -1,49 +1,57 @@
 # frozen_string_literal: true
 
 require 'colorize'
-require_relative 'blueprint'
+require_relative 'template/template'
 
 class Scope
-    attr_reader :name, :blueprint
+    attr_reader :id, :template, :subscopes
+    attr_accessor :parent_scope
 
-    def initialize(name, parent_scope = nil)
-        @name         = name
+    def initialize(id, parent_scope = nil)
+        @id         = id.nil? ? 'root' : id
         @parent_scope = parent_scope
         @subscopes    = {}
-        @blueprint    = Blueprint.new(self)
+        @template     = Template.new(self)
+        # @networks     = {}
     end
 
-    def add_subscope(name)
-        return nil if @subscopes.include?(name)
-
-        @subscopes[name] = Scope.new(name, self)
+    def synthesize
+        network = Network.new(full_name)
+        network.synthesize_scope(self)
     end
 
-    def find_scope(name)
-        scope = find_scope_down(name)
+    def add_subscope(scope)
+        scope.parent_scope = self
+        @subscopes[scope.id] = scope
+    end
+
+    def find_scope(id)
+        scope = _find_scope_down(id)
 
         return scope unless scope.nil?
 
-        @parent_scope&.find_scope(name)
+        @parent_scope&.find_scope(id)
     end
 
-    def find_scope_down(name)
-        return self if name == ''
+    def _find_scope_down(id)
+        return self if id == ''
 
-        top_level = name.split('.').first
-        deep_levels = name.split('.')[1..].join('.')
+        top_level = id.split('.').first
+        deep_levels = id.split('.')[1..].join('.')
 
-        return @subscopes[top_level].find_scope_down(deep_levels) if @subscopes.key? top_level
+        return @subscopes[top_level]._find_scope_down(deep_levels) if @subscopes.key? top_level
 
         nil
     end
 
+    def contains_scope?(id)
+        @subscopes.key? id
+    end
+
     def full_name
-        if @parent_scope
-            "#{@parent_scope.full_name}.#{@name}"
-        else
-            @name
-        end
+        return "#{@parent_scope.full_name}.#{@id}" if @parent_scope
+
+        @id
     end
 
     def inspect
@@ -51,17 +59,23 @@ class Scope
     end
 
     def to_s
-        "<Scope> #{@name}"
+        "<#{self.class}> #{@id}"
     end
 
-    def print(level = 0)
-        puts ('| ' * level) + @name.light_red
+    def depth
+        return 0 if @parent_scope.nil?
 
-        @blueprint.print(level)
+        @parent_scope.depth + 1
+    end
+
+    def print
+        puts ('| ' * depth) + @id.light_red
+
+        @template.print
 
         @subscopes.each_value do |scope| 
-            puts '| ' * (level + 1)
-            scope.print(level + 1)
+            puts '| ' * (depth + 1)
+            scope.print
         end
     end
 end
