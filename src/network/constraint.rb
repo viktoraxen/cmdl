@@ -13,7 +13,6 @@ class Constraint
         @inputs.each { |input| input.add_connection(self) }
         @output = output
         @output.add_constraint(self)
-        # @outputs.each { |output| output.add_constraint(self) }
 
         @type = 'constraint'
 
@@ -28,7 +27,11 @@ class Constraint
 
         assert_valid_gate_operation(@operation)
 
-        @output.value = @operation.call
+        new_value = @operation.call
+
+        return if new_value == @output.value
+
+        @output.value = new_value
     end
 
     def ==(other)

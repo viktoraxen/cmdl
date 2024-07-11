@@ -22,11 +22,11 @@ class Reference
     end
 
     def name
-        return @id if @subscript.nil?
+        return @id if @subscript == SubscriptRange.new
 
-        return "#{@id}[#{@subscript.start}]" if @subscript.size == 0
+        return "#{@id}.#{@subscript.start}" if @subscript.size == 0
 
-        "#{@id}[#{@subscript}]"
+        "#{@id}.#{@subscript}"
     end
 
     def inspect

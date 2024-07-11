@@ -12,7 +12,7 @@ class DeclarationNode < ASTNode
     def expressions_node
         @children[1]
     end
-    
+
     def declare(scope)
         debug_log
 

@@ -149,6 +149,7 @@ class Network
 
         inputs.zip(outputs).each do |input, output|
             # TODO: Add to constraints list
+            
             case connection.operation
             when 'not'
                 NotGate.new(connection.name, input, output)

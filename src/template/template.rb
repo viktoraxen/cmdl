@@ -279,15 +279,11 @@ class Template
     end
 
     def _connection_add_input(connection, input_ref)
-        return if connection.inputs.include? input_ref
-
         connection.inputs << input_ref
         _signal_add_connection input_ref.id, connection
     end
 
     def _connection_add_output(connection, output_ref)
-        return if connection.outputs.include? output_ref
-
         connection.outputs << output_ref
         _signal_set_constraint output_ref.id, connection
     end

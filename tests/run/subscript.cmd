@@ -47,6 +47,16 @@ signal a: 3
 signal b: 5 <= 5: 5
 a <= b.1:-1
 
+<< Range stop out of bounds
+< fail: SubscriptIndexOutOfBoundsError
+signal b: 4, a: 6
+b <= a.4:7
+
+<< Range start out of bounds
+< fail: SubscriptIndexOutOfBoundsError
+signal b: 4, a: 6
+b <= a.-8:2
+
 << Range start after stop (positive)
 < until: evaluate
 < fail: SpanInvalidRangeError
@@ -165,11 +175,48 @@ signal e: 3 <= 2: 3
 signal f: 3 <= 7: 3
 signal a: 2, b: 2, c: 2 <= (d and e, f or e, d or e and not f).0:2
 
-<< Chained subscript
-< skip
-< a: b100111
-< b: b01
-# Chained subscripting does not work with the current implementation
-# A fairly radical change would be needed to support this
-signal a: 6 <= 39: 6
-signal b: 4 <= a.:-1.:-1
+<< Receiver index
+< a: b1xx
+signal a: 3
+a.2 <= 1
+
+<< Receiver range
+< a: bx11
+signal a: 3
+a.0:2 <= 3: 2
+
+<< Receiver index out of bounds
+< fail: SubscriptIndexOutOfBoundsError
+signal a: 4
+a.4 <= 1
+
+<< Receiver range stop out of bounds
+< fail: SubscriptIndexOutOfBoundsError
+signal a: 4
+a.1:5 <= 1: 4
+
+<< Receiver range start out of bounds
+< fail: SubscriptIndexOutOfBoundsError
+signal a: 4
+a.-6:4 <= 1: 4
+
+<< Component output index out of range
+< fail: SubscriptIndexOutOfBoundsError
+component Xor(a) => c: 5
+    c <= 3: 5
+end
+signal b <= Xor(1).5
+
+<< Component output range stop out of range
+< fail: SubscriptIndexOutOfBoundsError
+component Xor(a) => c: 5
+    c <= 3: 5
+end
+signal b: 3 <= Xor(1).3:6
+
+<< Component output range start out of range
+< fail: SubscriptIndexOutOfBoundsError
+component Xor(a) => c: 5
+    c <= 3: 5
+end
+signal b: 3 <= Xor(1).-7:1

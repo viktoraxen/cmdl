@@ -99,7 +99,7 @@ end
 class ListNode < ASTNode
     def debug_log(msg = nil)
         super(@children.map(&:to_s)) if msg.nil?
-        super(msg) unless msg.nil?
+        super unless msg.nil?
     end
 
     def evaluate(*args)

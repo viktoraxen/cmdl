@@ -33,6 +33,8 @@ def assert_valid_assignment(scope, receiver_refs, value_refs)
                   "Width of receiver #{receiver} (#{rec_width}) does not match width of value #{value} (#{val_width})."
         end
     end
+
+    receiver_refs.map { |r| assert_valid_subscript(scope, r) }
 end
 
 #
@@ -206,6 +208,8 @@ end
 
 def assert_valid_binary_gate(connection)
     # TODO: Implement
+
+
 end
 
 #
@@ -268,7 +272,14 @@ end
 # Subscript
 #
 
-def assert_valid_subscript(scope, signal_ref, subscript)
+def assert_valid_subscript(scope, signal_ref, subscript = nil)
+    subscript ||= signal_ref.subscript
+
+    if subscript.nil?
+        raise SubscriptNullError,
+              "Subscript is null for signal #{signal_ref.id}."
+    end
+
     signal_id = signal_ref.id
     signal_width = scope.template.signal_width signal_id
 
@@ -293,7 +304,7 @@ def assert_valid_subscript(scope, signal_ref, subscript)
 
         if end_reach > signal_width
             raise SubscriptIndexOutOfBoundsError,
-                "Index #{subscript.end} out of bounds for signal #{signal_id} with width #{signal_width}."
+                "Index #{subscript.stop} out of bounds for signal #{signal_id} with width #{signal_width}."
         end
     end
 end
