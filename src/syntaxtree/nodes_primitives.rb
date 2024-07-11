@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative '../core/cmdl_assert'
+require_relative '../error/cmdl_assert'
 
 require_relative 'nodes_core'
 

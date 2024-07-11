@@ -110,9 +110,18 @@ class ListNode < ASTNode
 end
 
 class FlatListNode < ASTNode
+    def declare(*args)
+        debug_log
+
+        @children.map { |child| child.declare(*args) }.flatten
+    end
+
     def evaluate(*args)
         debug_log
 
         @children.map { |child| child.evaluate(*args) }.flatten
     end
+end
+
+class ScopeNode < ASTNode
 end

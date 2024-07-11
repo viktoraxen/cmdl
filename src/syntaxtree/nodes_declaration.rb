@@ -12,8 +12,8 @@ class DeclarationNode < ASTNode
     def expressions_node
         @children[1]
     end
-
-    def evaluate(scope, *)
+    
+    def declare(scope)
         debug_log
 
         declarators = declarators_node.evaluate(scope)
@@ -22,21 +22,25 @@ class DeclarationNode < ASTNode
         assert_valid_declaration(scope, declarators)
 
         # Declare wires
-        declarator_refs = declarators.map do |declarator|
+        @declarator_refs = declarators.map do |declarator|
             scope.template.declare(declarator)
         end
 
-        debug_log 'References:', declarator_refs
+        debug_log 'References:', @declarator_refs
 
-        return declarator_refs if expressions_node.nil?
+        @declarator_refs
+    end
+
+    def evaluate(scope, *)
+        return if expressions_node.nil?
 
         value_refs = expressions_node.evaluate(scope)
         debug_log 'Values:', value_refs
 
-        assert_valid_assignment(scope, declarator_refs, value_refs)
+        assert_valid_assignment(scope, @declarator_refs, value_refs)
 
         # Assign wires
-        scope.template.assign(declarator_refs, value_refs)
+        scope.template.assign(@declarator_refs, value_refs)
     end
 end
 

@@ -1,14 +1,14 @@
-# frozen_strin_literal: true
+# frozen_string_literal: true
 
-require_relative '../error/cmdlerrors'
+require_relative 'cmdl_errors'
 
 #
 # General
 #
 
 def assert_not_reached(info = nil)
-    raise UnreachableCodeError, 
-        "This code should not be reached (#{info})."
+    raise UnreachableCodeError,
+          "This code should not be reached (#{info})."
 end
 
 #
@@ -30,7 +30,7 @@ def assert_valid_assignment(scope, receiver_refs, value_refs)
 
         unless !(val_width && rec_width) || val_width == rec_width
             raise AssignmentWidthMismatchError,
-                  "Width of receiver (#{rec_width}) does not match width of value (#{val_width})."
+                  "Width of receiver #{receiver} (#{rec_width}) does not match width of value #{value} (#{val_width})."
         end
     end
 end
@@ -85,12 +85,12 @@ def assert_valid_constraint(constraint)
 
     if constraint.inputs.nil? || constraint.inputs.empty?
         raise ConstraintInvalidInputsError,
-            "Invalid inputs for #{constraint.name} (#{constraint.inputs})."
+              "Invalid inputs for #{constraint.name} (#{constraint.inputs})."
     end
 
     if constraint.outputs.nil? || constraint.outputs.empty?
         raise ConstraintInvalidOutputsError,
-            "Invalid outputs for #{constraint.name} (#{constraint.outputs})."
+              "Invalid outputs for #{constraint.name} (#{constraint.outputs})."
     end
 
     assert_valid_gate_operation(constraint.operation)
@@ -99,7 +99,7 @@ end
 def assert_valid_gate_operation(operation)
     if operation.nil?
         raise ConstraintInvalidOperationError,
-            "Null operation"
+              'Null operation'
     end
 end
 
@@ -158,7 +158,7 @@ def assert_valid_component_expression(scope, comp_id, input_refs)
 
         unless (input_width.nil? || component_width.nil?) || input_width == component_width
             raise ExpressionComponentInputWidthMismatchError,
-                  "Width of input (#{input_width}) does not match width of component input (#{component_width})."
+                  "Width of input #{input} (#{input_width}) does not match width of component #{comp_id} input #{component_input} (#{component_width})."
         end
     end
 end
@@ -191,7 +191,7 @@ end
 #
 # Gate
 #
- 
+
 def assert_valid_unary_gate(connection)
     inputs = connection.inputs
     input_size = inputs.size
@@ -214,14 +214,31 @@ end
 
 def assert_valid_identifier(id)
     if ['not', 'and', 'or'].include?(id)
-        raise ForbiddenIdentifierError, 
-            "Identifier '#{id}' is forbidden."
+        raise ForbiddenIdentifierError,
+              "Identifier '#{id}' is forbidden."
     end
 end
 
 #
 # Scope
 #
+
+def assert_valid_scope_node(node)
+    unless node.is_a? ScopeNode
+        raise ScopeNodeError,
+              "Not a scope node: #{node.class}"
+    end
+
+    if node.children.select { |c| c.is_a? ComponentSignatureNode }.size > 1
+        raise ScopeSignatureError,
+              "Scope node must contain at most one component signature."
+    end
+
+    if node.children.select { |c| c.is_a? CodeBlockNode }.size > 1
+        raise ScopeCodeBlockError,
+              "Scope node must contain at most one code block."
+    end
+end
 
 def assert_valid_subscope(scope, subscope)
     if scope.contains_scope? subscope.id
@@ -231,28 +248,67 @@ def assert_valid_subscope(scope, subscope)
 end
 
 def assert_valid_scope(scope, id = nil)
-    if scope.nil?
-        raise ScopeNullError, "Scope #{id} is null."
-    end
+    raise ScopeNullError, "Scope #{id} is null." if scope.nil?
 
     assert_valid_template scope.template
+end
+
+#
+# Signal
+#
+
+def assert_signal_exists(scope, signal_id)
+    unless scope.template._signal_exists? signal_id
+        raise SignalNotFoundError,
+              "Signal #{signal_id} not found in scope #{scope.id}."
+    end
 end
 
 #
 # Subscript
 #
 
-def assert_valid_span(start, stop)
+def assert_valid_subscript(scope, signal_ref, subscript)
+    signal_id = signal_ref.id
+    signal_width = scope.template.signal_width signal_id
+
+    if signal_width.nil?
+        raise SubscriptSignalUndefinedError,
+              "Signal #{signal_id} is not defined in scope #{scope.id}."
+    end
+
+    unless subscript.start.nil?
+        start_reach = subscript.start.abs
+        start_reach += 1 if subscript.start >= 0
+
+        if start_reach > signal_width
+            raise SubscriptIndexOutOfBoundsError,
+                "Index #{subscript.start} out of bounds for signal #{signal_id} with width #{signal_width}."
+        end
+    end
+
+    unless subscript.stop.nil?
+        end_reach = subscript.stop.abs - 1
+        end_reach += 1 if subscript.stop >= 0
+
+        if end_reach > signal_width
+            raise SubscriptIndexOutOfBoundsError,
+                "Index #{subscript.end} out of bounds for signal #{signal_id} with width #{signal_width}."
+        end
+    end
+end
+
+def assert_valid_span_values(start, stop)
     if start.nil? && stop.nil?
         raise SpanNullIndexError,
             'Start and end of span cannot both be null.'
     end
 
-    if (!start.nil? && !stop.nil?) && 
-        ((start >= 0 && stop >= 0 && start > stop) || 
+    if (!start.nil? && !stop.nil?) &&
+        ((start >= 0 && stop >= 0 && start > stop) ||
         (start.negative? && stop.negative? && start > stop))
         raise SpanInvalidRangeError,
-            "Start index must be before en index: #{start}..#{stop}."
+              "Start index must be before end index: #{start}..#{stop}."
     end
 end
 
@@ -268,7 +324,7 @@ def assert_valid_template(template)
 
     unless undeclared_signals.empty?
         raise TemplateUndeclaredSignalsError,
-            "Template #{name} contains undeclared signals: #{undeclared_signals.join(', ')}"
+              "Template #{name} contains undeclared signals: #{undeclared_signals.join(', ')}"
     end
 end
 

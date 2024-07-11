@@ -9,7 +9,7 @@
 #   of turning on and off debug messages.
 # 2014-02-16 New version that handles { false } blocks and :empty tokens.
 
-require_relative '../error/cmdlerrors'
+require_relative '../error/cmdl_errors'
 
 require 'logger'
 

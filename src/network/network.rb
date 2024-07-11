@@ -3,7 +3,7 @@
 require 'colorize'
 
 require_relative '../template/template'
-require_relative '../core/cmdl_assert'
+require_relative '../error/cmdl_assert'
 require_relative 'constraint'
 
 class Network
@@ -128,7 +128,7 @@ class Network
     end
 
     def _network_name(connection)
-        "#{connection.operation}(#{connection.inputs.map(&:id).join(', ')})"
+        "#{connection.operation}(#{connection.inputs.join(', ')})"
     end
 
     def _gate_add(connection)
@@ -137,7 +137,7 @@ class Network
         elsif _gate_is_binary? connection
             _gate_add_binary(connection)
         else
-            assert_not_reached
+            assert_not_reached "Network._gate_add: Invalid gate operation: #{connection.operation}"
         end
     end
 
@@ -155,7 +155,7 @@ class Network
             when 'assign'
                 AssignGate.new(connection.name, input, output)
             else
-                assert_not_reached
+                assert_not_reached "Network._gate_add_unary: Invalid unary gate operation: #{connection.operation}"
             end
         end
     end
@@ -175,7 +175,7 @@ class Network
             when 'or'
                 OrGate.new(connection.name, lh, rh, output)
             else
-                assert_not_reached
+                assert_not_reached "Network._gate_add_binary: Invalid binary gate operation: #{connection.operation}"
             end
         end
     end
@@ -227,6 +227,13 @@ class Network
         []
     end
 
+    def get_state
+        @wires[:user].to_h do |name, wires|
+            value = wires.reverse.map(&:value_b).join
+            [name, value]
+        end
+    end
+
     def depth
         return 0 if @parent.nil?
 
@@ -270,5 +277,9 @@ class Network
 
             network.print(full_print, deep_print)
         end
+    end
+
+    def inspect
+        to_s
     end
 end

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative '../core/cmdl_assert'
+require_relative '../error/cmdl_assert'
 
 require_relative 'nodes'
 
@@ -16,6 +16,8 @@ class SyntaxTree
     end
 
     def scope_structure(node)
+        assert_valid_scope_node(node)
+
         signature = node.children.find { |child| child.is_a?(ComponentSignatureNode) }&.evaluate
 
         scope = Scope.new signature&.id
@@ -30,7 +32,9 @@ class SyntaxTree
 
         code_node = node.children.find { |child| child.is_a?(CodeBlockNode) }
 
-        code_node.component_statements.map do |child|
+        # code_node.declaration_statements_node.evaluate(scope)
+
+        code_node.component_statement_nodes.each do |child|
             subscope_structure = scope_structure(child)
 
             assert_valid_subscope(scope, subscope_structure)

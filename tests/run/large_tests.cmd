@@ -1,4 +1,14 @@
 << All primary gates
+< a:    b0011
+< b:    b0101
+< and_: b0001
+< or_:  b0111
+< xor_: b0110
+< nor_: b1000
+< xnor_:b1001
+< nand_:b1110
+< nxor: b1001
+
 signal a: 4 <= 3: 4
 signal b: 4 <= 5: 4
 
@@ -31,15 +41,17 @@ component Nand(a: 4, b: 4) => x: 4
 end
 
 << Four-bit adder
+< s: 30: 5
+
 signal s: 5 <= Adder(15: 4, 15: 4)
 
 component Adder(a: 4, b: 4) => s: 5
     signal c: 3
 
-    s[3], s[4] <= FullAdder(b[3], a[3], c[2])
-    s[2], c[2] <= FullAdder(b[2], a[2], c[1])
-    s[1], c[1] <= FullAdder(b[1], a[1], c[0])
-    s[0], c[0] <= FullAdder(b[0], a[0], 0)
+    s.3, s.4 <= FullAdder(b.3, a.3, c.2)
+    s.2, c.2 <= FullAdder(b.2, a.2, c.1)
+    s.1, c.1 <= FullAdder(b.1, a.1, c.0)
+    s.0, c.0 <= FullAdder(b.0, a.0, 0)
 
     component FullAdder(a, b, cin) => s, cout
         signal z <= Xor(a, b)

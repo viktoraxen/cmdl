@@ -87,6 +87,15 @@ end
 class ScopeNullError < StandardError
 end
 
+class ScopeNodeError < StandardError
+end
+
+class ScopeSignatureError < StandardError
+end
+
+class ScopeCodeBlockError < StandardError
+end
+
 class ScopeTemplateNullError < StandardError
 end
 
@@ -96,8 +105,14 @@ end
 class SpanInvalidRangeError < StandardError
 end
 
+class SubscriptIndexOutOfBoundsError < StandardError
+end
+
 class TemplateUndeclaredSignalsError < StandardError
 end
 
 class UnknownComponentError < StandardError
+end
+
+class ValidationResultError < StandardError
 end

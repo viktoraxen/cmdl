@@ -2,7 +2,7 @@
 
 require_relative 'nodes_core'
 
-require_relative '../core/cmdl_assert'
+require_relative '../error/cmdl_assert'
 
 class AssignmentReceiverListNode < FlatListNode
 end

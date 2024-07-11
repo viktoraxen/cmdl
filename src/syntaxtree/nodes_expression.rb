@@ -2,7 +2,7 @@
 
 require_relative 'nodes_core'
 
-require_relative '../core/cmdl_assert'
+require_relative '../error/cmdl_assert'
 require_relative '../types/constant'
 
 class BinaryExpressionNode < ASTNode
@@ -112,6 +112,8 @@ class ExpressionSubscriptNode < ASTNode
         debug_log 'Subscript:', subscript
 
         expression_output_refs.map do |output_ref|
+            assert_valid_subscript(scope, output_ref, subscript)
+
             scope.template.reference_add_subscript(output_ref, subscript)
         end
     end

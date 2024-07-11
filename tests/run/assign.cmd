@@ -11,16 +11,21 @@ a <= b
 signal a, b
 
 << Two receivers, two values (Early declare)
-signal a, b, c, d
-a, b <= c, d
+< a: 1
+< b: 0
+signal a, b
+a, b <= 1, 0
 
 << Two recievers, two values (On declare)
-signal c, d
-signal a, b <= c, d
+< a: 0
+< b: 1
+signal a, b <= 0, 1
 
 << Two receivers, two values (Late declare)
-a, b <= c, d
-signal a, b, c, d
+< a: 1
+< b: 0
+a, b <= 1, 0
+signal a, b
 
 << Many receivers, many values (Early declare)
 signal a, b, c, d, e, f, g, h, i, j, k, l, m, n
@@ -37,20 +42,19 @@ signal a, b, c, d, e, f, g, h, i, j, k, l, m, n
 << More values (Early declare)
 < until: evaluate
 < fail: AssignmentNumberMismatchError
-signal a, b, c
-a <= b, c
+signal a
+a <= 1, 0
 
 << More values (On declare)
 < until: evaluate
 < fail: AssignmentNumberMismatchError
-signal b, c
-signal a <= b, c
+signal a <= 1, 0
 
 << More values (Late declare)
 < until: evaluate
 < fail: AssignmentNumberMismatchError
-a <= b, c
-signal a, b, c
+a <= 0, 1
+signal a
 
 << Fewer values (Early declare)
 < until: evaluate
@@ -69,6 +73,20 @@ signal a, b <= c
 < fail: AssignmentNumberMismatchError
 a, b <= c
 signal a, b, c
+
+<< Assignment of constant (Early declare)
+< a: b10
+signal a: 2 
+a <= 2: 2
+
+<< Assignment of constant (On declare)
+< a: b10
+signal a: 2 <= 2: 2
+
+<< Assignment of constant (Late declare)
+< a: b1000011
+a <= 67: 7
+signal a: 7
 
 << Incompatible width (Early declare)
 < until: evaluate
@@ -159,3 +177,20 @@ component Xor(a: 2, b) => c
 end
 c, d <= Xor(a, b)
 signal a: 2, b, c, d
+
+<< Multiple expression
+< a: 0
+< b: 1
+< c: 1
+signal a, b, c
+a, b, c <= 1 and 0, a or c, 0 or 1
+
+<< Multiple component expression
+< a: 1
+< b: 1
+< c: 1
+component Xor(a, b) => c
+    c <= a and b
+end
+signal a, b, c
+a, b, c <= Xor(b, c), c, 1

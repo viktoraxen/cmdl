@@ -6,8 +6,7 @@ require_relative '../log/log'
 require_relative '../types/declarator'
 require_relative '../types/reference'
 require_relative '../types/subscript'
-require_relative '../error/cmdlerrors'
-require_relative '../core/cmdl_assert'
+require_relative '../error/cmdl_assert'
 
 require_relative 'signal'
 require_relative 'connection'
@@ -152,7 +151,7 @@ class Template
     end
 
     def _signal_add_connection(id, connection)
-        return unless _signal_exists? id
+        assert_signal_exists(@scope, id)
 
         signal = _signal_find(id)
 
@@ -162,13 +161,13 @@ class Template
     end
 
     def _signal_set_constraint(id, connection)
-        return unless _signal_exists? id
+        assert_signal_exists(@scope, id)
 
         _signal_find(id).constraint = connection
     end
 
     def _signal_set_width(id, width)
-        return unless _signal_exists? id
+        assert_signal_exists(@scope, id)
 
         signal = _signal_find(id)
 
@@ -181,14 +180,13 @@ class Template
     end
 
     def signal_width(id)
+        return signal_width id.id if id.is_a? Reference
         return unless _signal_exists? id
 
         _signal_find(id).width
     end
 
     def _signal_reference(id, subscript = nil)
-        subscript ||= Subscript.new
-
         Reference.new(id, subscript)
     end
 
@@ -206,6 +204,8 @@ class Template
         return _signal_subscript_width(id.id, id.subscript) if id.is_a? Reference
 
         return nil unless _signal_has_width(id)
+
+        return subscript.size if subscript.is_a? SubscriptIndex
 
         length = signal_width(id)
         start = subscript.start

@@ -4,9 +4,9 @@ require_relative 'nodes_core'
 
 require_relative '../types/signature'
 
-require_relative '../core/cmdl_assert'
+require_relative '../error/cmdl_assert'
 
-class ComponentNode < ASTNode
+class ComponentNode < ScopeNode
     def signature_node
         @children[0]
     end

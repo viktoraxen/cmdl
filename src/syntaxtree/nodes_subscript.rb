@@ -22,9 +22,9 @@ class SpanNode < ASTNode
         end_index = end_node&.evaluate
         debug_log 'End Index:', end_index
 
-        assert_valid_span(start_index, end_index)
+        assert_valid_span_values(start_index, end_index)
 
-        Subscript.new(start_index, end_index)
+        SubscriptRange.new(start_index, end_index)
     end
 end
 
@@ -39,6 +39,6 @@ class IndexNode < ASTNode
         index = start_node.evaluate
         debug_log 'Index:', index
 
-        Subscript.new(index, index + 1)
+        SubscriptIndex.new(index)
     end
 end

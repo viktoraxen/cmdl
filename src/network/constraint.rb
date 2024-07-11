@@ -59,18 +59,6 @@ class BinaryConstraint < Constraint
         @type = 'binary'
     end
 
-    # def new_value
-    #     return if @inputs.any? { |input| input.value.nil? }
-
-    #     @outputs.each do |output|
-    #         output.value = determined? ? (@inputs[0].value and @inputs[1].value) : '<nil>'
-    #     end
-    # end
-
-    # def type_s
-    #     'binary'
-    # end
-
     def expression
         "#{@inputs[0].name} #{type_s} #{@inputs[1].name}"
     end
@@ -84,14 +72,6 @@ class AndGate < BinaryConstraint
 
         @type = 'and'
     end
-
-    # def new_value
-    #     return if @inputs.any? { |input| input.value.nil? }
-
-    #     @outputs.each do |output|
-    #         output.value = determined? ? (@inputs[0].value and @inputs[1].value) : '<nil>'
-    #     end
-    # end
 end
 
 class OrGate < BinaryConstraint
@@ -102,17 +82,6 @@ class OrGate < BinaryConstraint
 
         @type = 'or'
     end
-    # def new_value
-    #     return if @inputs[0..1].any? { |input| input.value.nil? }
-
-    #     @outputs.each do |output|
-    #         output.value = (@inputs[0].value or @inputs[1].value)
-    #     end
-    # end
-
-    # def type_s
-    #     'or'
-    # end
 end
 
 class UnaryConstraint < Constraint
@@ -120,10 +89,6 @@ class UnaryConstraint < Constraint
         super(name, [input], output)
         @type = 'unary'
     end
-
-    # def type_s
-    #     'unary'
-    # end
 
     def expression
         "#{type_s} #{@inputs[0].name}"
@@ -136,17 +101,6 @@ class NotGate < UnaryConstraint
         super(name, input, output)
         @type = 'not'
     end
-    # def new_value
-    #     return if @inputs[0].value.nil?
-
-    #     @outputs.each do |output|
-    #         output.value = (!@inputs[0].value)
-    #     end
-    # end
-
-    # def type_s
-    #     'not'
-    # end
 end
 
 class AssignGate < UnaryConstraint
@@ -155,18 +109,6 @@ class AssignGate < UnaryConstraint
         super(name, input, output)
         @type = 'assign'
     end
-
-    # def new_value
-    #     return if @inputs[0].value.nil?
-
-    #     @outputs.each do |output|
-    #         output.value = @inputs[0].value
-    #     end
-    # end
-
-    # def type_s
-    #     'assign'
-    # end
 end
 
 class FanGate < Constraint
@@ -228,9 +170,10 @@ class Wire
 
     def value_b
         value_map = {
-            nil   => 'x',
-            true  => '1',
-            false => '0'
+            '<nil>' => 'x',
+            nil     => 'x',
+            true    => '1',
+            false   => '0'
         }
 
         value_map[@value]

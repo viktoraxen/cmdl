@@ -8,7 +8,7 @@ class Scope
     attr_accessor :parent_scope
 
     def initialize(id, parent_scope = nil)
-        @id         = id.nil? ? 'root' : id
+        @id         = id.nil? ? 'Network' : id
         @parent_scope = parent_scope
         @subscopes    = {}
         @template     = Template.new(self)

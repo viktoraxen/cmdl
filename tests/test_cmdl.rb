@@ -44,4 +44,4 @@ result_str = [skip_str, warning_str, failed_str, passed_str, total_str].join(' /
 puts "Total time: #{tot_time.round(2)} ms"
 puts "Result: #{result_str}"
 
-puts 'All attempted tests passed!'.green if tot_passed == tot_ran - tot_skipped
+puts 'All attempted tests passed!'.green if tot_passed == tot_ran - tot_skipped - tot_warnings

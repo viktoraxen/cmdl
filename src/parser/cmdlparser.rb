@@ -16,6 +16,7 @@ class CmdlParser < Parser
             token(/[(|)]/)   { |m| m }
             token(/[\[|\]]/) { |m| m }
             token(/,/)       { |m| m }
+            token(/\.\./)    { |m| m }
             token(/\./)      { |m| m }
             token(/:/)       { |m| m }
 
@@ -186,8 +187,8 @@ class CmdlParser < Parser
             #
             
             rule :subscript do
-                match('[', :span,  ']') { |_, span, _ | span  }
-                match('[', :index, ']') { |_, index, _| index }
+                match('.', :span,) { |_, span | span  }
+                match('.', :index) { |_, index| index }
             end
 
             rule :span do

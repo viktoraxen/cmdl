@@ -58,6 +58,7 @@ component Xor(a, b) => c
 end
 
 << Duplicate identifier
+< until: evaluate
 < fail: ScopeDuplicateSubscopeError
 component Xor(a, b) => c
 end

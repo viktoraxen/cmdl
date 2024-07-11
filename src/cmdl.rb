@@ -10,7 +10,7 @@ $flags = {
     '--template-print'     => 'Print the template',
     '--network-print'      => 'Print the network',
     '--full-network-print' => 'Print all information about each network',
-    '--deep-network-print' => 'Print the network recursively',
+    '--deep-network-print' => 'Print the network with all components expanded',
     '--logging'            => 'Print the full log'
 }
 
@@ -52,6 +52,5 @@ if ARGV.empty?
         puts "    #{flag_string.ljust(flag_width )}  #{description}"
     end
 else
-
     cmdl_file(get_filename, get_flags)
 end

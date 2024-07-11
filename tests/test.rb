@@ -20,9 +20,11 @@ class TestFile
         warning:  ''
     }
     @@stop_stage_symbols = {
-        1 => '󰯃',
-        2 => '󰹩',
-        3 => ''
+        0 => '',
+        1 => '󰹩',
+        2 => '',
+        3 => '',
+        4 => ''
     }
 
     attr_reader :total_time
@@ -56,10 +58,15 @@ class TestFile
 
             color = @@colors[result]
             symbol = @@symbols[symbol]
-            stop_stage = @@stop_stage_symbols[test.stop_stage]
+            stop_stage = @@stop_stage_symbols[test.reached_stage]
 
-            result_str = "#{symbol} #{stop_stage}: #{test.name}".colorize(color)
-            result_str += " - #{exception.class}: #{exception.to_s.strip}" unless exception.nil?
+            result_str = "#{symbol} #{stop_stage} : #{test.name}".colorize(color)
+            unless exception.nil?
+                result_str += " - #{exception.class}" if exception.is_a? StandardError
+                exception_location = exception.backtrace.first.match(/\/(?<loc>.*:\d*)/)[:loc].split('/').last if exception.is_a? StandardError
+                result_str += " - #{exception_location}" unless exception_location.nil?
+                result_str += " - #{exception.to_s.strip}"
+            end
 
             _std_puts "#{@@indent}#{result_str}"
 
@@ -93,7 +100,7 @@ class TestFile
 end
 
 class Test
-    attr_reader :name, :should_finish, :skip, :elapsed_time, :stop_stage
+    attr_reader :name, :should_finish, :skip, :elapsed_time, :reached_stage
 
     def initialize(name, tags, content, parser = CmdlParser.new(Logger::ERROR))
         @name    = name
@@ -107,12 +114,15 @@ class Test
         @valid_exceptions = params[:valid_exceptions]
         @skip             = params[:skip]
         @stop_stage       = params[:stop_stage]
+        @expected_results = params[:expected_results]
 
         @tree       = nil
         @root_scope = nil
         @network    = nil
 
         @elapsed_time = nil
+
+        @reached_stage = 0
     end
 
     def run
@@ -125,6 +135,7 @@ class Test
             parse
             evaluate unless @stop_stage < 2
             synthesize unless @stop_stage < 3
+            validate unless @stop_stage < 4
         rescue *@valid_exceptions
             result = :success, :threw
         rescue => e
@@ -143,14 +154,30 @@ class Test
 
     def parse
         @tree = @parser.parse(@content)
+        @reached_stage = 1
     end
 
     def evaluate
         @root_scope = @tree.evaluate
+        @reached_stage = 2
     end
 
     def synthesize
         @network = @root_scope.synthesize
+        @reached_stage = 3
+    end
+
+    def validate
+        @results = @network.get_state
+
+        @expected_results.each do |name, value|
+            unless @results[name] == value
+                raise ValidationResultError,
+                      "Expected #{name} to be #{value}, but it was #{@results[name]}"
+            end
+        end
+
+        @reached_stage = 4
     end
 
     def content_empty
@@ -170,7 +197,8 @@ class Test
             should_finish:    true,
             valid_exceptions: [],
             skip:             false,
-            stop_stage:       3
+            stop_stage:       4,
+            results:          {}
         }
 
         return params if tags.nil?
@@ -185,7 +213,8 @@ class Test
         stop_stage_map = {
             'parse'      => 1,
             'evaluate'   => 2,
-            'synthesize' => 3
+            'synthesize' => 3,
+            'validate'   => 4,
         }
 
         params[:stop_stage] = stop_stage_map[stop_stage] unless stop_stage.nil?
@@ -197,6 +226,24 @@ class Test
         if !params[:should_finish]
             params[:valid_exceptions] = _get_valid_exceptions(fail_tag)
         end
+
+        params[:expected_results] = tags.map do |tag| 
+            match = tag.strip.match(/^(?<name>\w+)\s*:\s*(?<value>b[x01]+|\d+)\s*:?\s*(?<width>\d+)?$/)
+
+            next if match.to_s == ""
+
+            name, value, width = match.captures
+
+            if value[0] == 'b'
+                value = value[1..]
+            else
+                value = value.to_i.to_s(2).rjust(width.to_i, '0')
+            end
+
+            [name, value]
+        end
+
+        params[:stop_stage] = [params[:stop_stage], 3].min if params[:expected_results].empty?
 
         params
     end

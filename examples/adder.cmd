@@ -1,16 +1,13 @@
-signal s: 5 <= Adder(15: 4, # What is the width of the expression node created here?
-                     15: 4) # Should be 5, but we dont know the signature of the Adder component yet
-
-signal s2: 5 <= Adder(s[:4], 1: 4) # 5
+signal sum: 5 <= Adder(15: 4, 15: 4)
 
 # Component for adding two 4-bit numbers
 component Adder(a: 4, b: 4) => s: 5
     signal c: 3 # Intermediate carry signals
 
-    s[3], s[4] <= FullAdder(b[3], a[3], c[2])
-    s[2], c[2] <= FullAdder(b[2], a[2], c[1])
-    s[1], c[1] <= FullAdder(b[1], a[1], c[0])
-    s[0], c[0] <= FullAdder(b[0], a[0], 0)
+    s.3, s.4 <= FullAdder(b.3, a.3, c.2)
+    s.2, c.2 <= FullAdder(b.2, a.2, c.1)
+    s.1, c.1 <= FullAdder(b.1, a.1, c.0)
+    s.0, c.0 <= FullAdder(b.0, a.0, 0)
 
     # Helper component for adding two 1-bit numbers
     component FullAdder(a, b, cin) => s, cout
