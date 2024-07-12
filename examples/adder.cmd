@@ -1,4 +1,4 @@
-signal result: 4, c <= Adder(0: 4, 15: 4, 1)
+signal result: 4, c <= Adder(9: 4, 15: 4, 0)
 
 component Adder(a: 4, b: 4, k) => s: 4, c
     signal d: 3
