@@ -18,7 +18,7 @@ component Xor(a, b) => c
 end
 
 signal a, b <= 0, 0
-signal c <= Xor.Nor(a, b)
+signal c <= Xor::Nor(a, b)
 
 << Five levels down
 < c: 1
@@ -39,7 +39,7 @@ component Xor(a, b) => c
 end
 
 signal a, b <= 1, 0
-signal c <= Xor.Nor.Bor.Mor.Zor(a, b)
+signal c <= Xor::Nor::Bor::Mor::Zor(a, b)
 
 << One level up
 component Xor(a, b) => c
@@ -70,7 +70,7 @@ component Xor(a, b) => c
     c <= a and b
     component Nor(a, b) => d
         d <= not (a or b)
-        d <= Zor.Mor.Wor.Por(a, b)
+        d <= Zor::Mor::Wor::Por(a, b)
     end
 end
 component Zor(a, b) => d
@@ -89,7 +89,7 @@ end
 << Two levels up, three levels down
 component Xor(a, b) => c
     component Nor(a, b) => d
-        d <= Zor.Mor.Wor.Por(a, b)
+        d <= Zor::Mor::Wor::Por(a, b)
     end
     component Zor(a, b) => d
         component Mor(a, b) => d

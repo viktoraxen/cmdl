@@ -18,7 +18,7 @@ signal xor_:  4 <= Xor(a, b)
 signal nor_:  4 <= Nor(a, b)
 signal xnor_: 4 <= Xnor(a, b)
 signal nand_: 4 <= Nand(a, b)
-signal nxor:  4 <= Xor.NotXor(a, b)
+signal nxor:  4 <= Xor::NotXor(a, b)
 
 component Xor(a: 4, b: 4) => x: 4
     x <= not a and b or a and not b

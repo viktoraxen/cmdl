@@ -18,6 +18,7 @@ class CmdlParser < Parser
             token(/,/)       { |m| m }
             token(/\.\./)    { |m| m }
             token(/\./)      { |m| m }
+            token(/::/)       { |m| m }
             token(/:/)       { |m| m }
 
             token(/[a-zA-Z][a-zA-Z_0-9]*/) { |m| m }
@@ -169,7 +170,7 @@ class CmdlParser < Parser
             end
 
             rule :expression_component do
-                match(:identifier_dotsep, '(', :expressions, ')') do |component_id, _, inputs, _|
+                match(:component_ref, '(', :expressions, ')') do |component_id, _, inputs, _|
                     ComponentExpressionNode.new(component_id, inputs)
                 end
                 match(:expression_primary) { |expr| expr }
@@ -205,6 +206,11 @@ class CmdlParser < Parser
             # Primitives
             # [Id]
             #
+            
+            rule :component_ref do
+                match(:component_ref, '::', :identifier) { |ids, _, id| ids.append_id(".#{id.value}"); ids }
+                match(:identifier)                       { |id        | id }
+            end
 
             rule :identifier_dotsep do
                 match(:identifier_dotsep, '.', :identifier) { |ids, _, id| ids.append_id(".#{id.value}"); ids }
