@@ -81,12 +81,7 @@ class Template
         width = declarator.width
         type  = declarator.type
 
-        if _signal_exists? id
-            _signal_set_width(id, width)
-            _signal_declare id
-        else
-            _signal_add(_signal_create(id, width, declared: true), type)
-        end
+        _signal_add(_signal_create(id, width, declared: true), type)
 
         _signal_reference(id)
     end
