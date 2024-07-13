@@ -430,27 +430,35 @@ class Template
     # Debug
     #
 
-    def print
-        @signals.each do |type, signals|
+    # def print(final, subnetworks)
+    def print(pf, final, subnets)
+        @signals.each_with_index do |(type, signals), index|
             next if signals.empty?
 
-            indent = '| ' * (depth + 1)
+            final_type = index == @signals.size - 1 && @connections.empty? && !subnets
+
             text = "#{type.capitalize} signals".light_blue
 
-            puts "#{indent}#{text}"
+            puts "#{pf}#{type_indent(final_type)}#{text}"
 
             width = signals.values.map(&:id).map(&:length).max
 
-            signals.each do |name, signal|
+            signals.each_with_index do |(name, signal), index|
                 string = "#{name.ljust(width)}".colorize(:light_green)
                 string = string.colorize(:light_yellow) if signal.id[0] =~ /[0-9]/
                 string = string.colorize(:light_red) unless signal_declared? name
-                puts "#{indent}| #{string} : #{signal.width}"
+
+                final_sig = index == signals.size - 1
+                indent = element_indent(final_sig, final_type)
+
+                puts "#{pf}#{indent}#{string} : #{signal.width}"
             end
         end
 
-        puts '| ' * (depth + 1) unless @connections.empty?
-        puts '| ' * (depth + 1) + 'Connections'.light_blue unless @connections.empty?
+        return if @connections.empty?
+
+        puts "#{pf}#{new_line}"
+        puts "#{pf}#{type_indent(!subnets)}#{'Connections'.light_blue}"
 
         type_width = @connections.keys.map(&:length).max
         inputs_widths = @connections.values.map do |c| 
@@ -461,18 +469,45 @@ class Template
 
         inputs_width = inputs_widths.flatten.max
 
-        @connections.each do |operation, connections|
+        @connections.each_with_index do |(operation, connections), index|
             next if connections.empty?
 
-            connections.each do |connection|
+            final_type = index == @connections.size - 1
+
+            connections.each_with_index do |connection, con_i|
+                final_con = con_i == connections.size - 1 && final_type
+
                 operation = connection.operation.ljust(type_width).cyan
                 inputs    = connection.inputs.map(&:name).join(', ').ljust(inputs_width).magenta
                 outputs   = connection.outputs.map(&:name).join(', ').light_yellow
 
+                indent = element_indent(final_con, !subnets)
                 string = "#{operation} : #{inputs} -> #{outputs}"
-                puts "#{'| ' * (depth + 1)}| #{string}"
+
+
+                puts "#{pf}#{indent}#{string}"
             end
         end
+    end
+
+    def element_indent(final = false, final_type = false)
+        base(final_type) + leaf(final)
+    end
+
+    def type_indent(final = false)
+        leaf(final)
+    end
+
+    def new_line
+        '│'
+    end
+
+    def leaf(final = false)
+        final ? '└─ ' : '├─ '
+    end
+
+    def base(final = false)
+        final ? '   ' : '│  '
     end
 
     def depth

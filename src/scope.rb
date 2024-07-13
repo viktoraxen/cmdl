@@ -62,20 +62,38 @@ class Scope
         "<#{self.class}> #{@id}"
     end
 
+    def root?
+        depth == 0
+    end
+
     def depth
         return 0 if @parent_scope.nil?
 
         @parent_scope.depth + 1
     end
 
-    def print
-        puts ('| ' * depth) + @id.light_red
+    def print(pf = "", final = true)
 
-        @template.print
+        puts "#{pf}#{leaf(final)}#{@id.light_red}"
 
-        @subscopes.each_value do |scope| 
-            puts '| ' * (depth + 1)
-            scope.print
+        new_pf = root? ? '' : "#{pf}#{base(final)}"
+        @template.print(new_pf, final, !@subscopes.empty?)
+
+        @subscopes.each_with_index do |(_, scope), index| 
+            puts "#{pf}#{new_line(final)}"
+            scope.print(new_pf, index == @subscopes.size - 1)
         end
+    end
+
+    def new_line(final = false)
+        "#{base(final)}│"
+    end
+
+    def leaf(final = false)
+        root? ? '' : (final ? '└─ ' : '├─ ')
+    end
+
+    def base(final = false)
+        root? ? '' : (final ? '   ' : '│  ')
     end
 end
