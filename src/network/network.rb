@@ -241,24 +241,25 @@ class Network
         @parent.depth + 1
     end
 
-    def print(full_print = false, deep_print = false)
-        indent = '| ' * depth
-        puts "#{indent}#{@name.light_red}"
+    def print(full_print = false, deep_print = false, pf = "", final = true)
+        puts "#{pf}#{root? ? '' : leaf(final)}#{@name.light_red}"
+        pf = root? ? '' : "#{pf}#{base(final)}"
 
-        @wires.each do |type, wires|
+        wires_to_print = @wires
+        wires_to_print = wires_to_print.except(:internal, :constant) unless full_print
+
+        wires_to_print.each_with_index do |(type, wires), index|
             next if wires.empty?
 
-            next if %i[constant internal].include?(type) && !full_print
-
-            indent = '| ' * (depth + 1)
+            final_type = index == wires_to_print.size - 1 && (!deep_print || @subnetworks.empty?)
             text = "#{type.capitalize} wires".light_blue
 
-            puts "#{indent}#{text}"
+            puts "#{pf}#{type_indent(final_type)}#{text}"
 
             width = wires.keys.map(&:length).max
 
-            wires.each do |name, wire|
-                string = "#{name.ljust(width)}".colorize(:light_green)
+            wires.each_with_index do |(name, wire), index|
+                string = name.ljust(width).to_s.colorize(:light_green)
                 string = string.colorize(:light_yellow) if name[0] =~ /[0-9]/
 
                 binary_values = wire.reverse.map(&:value_b)
@@ -267,17 +268,44 @@ class Network
                 decimal_value = binary_values.join.to_i(2) unless binary_values.map { |b| b == '<nil>' }.any?
                 string += " : #{decimal_value.to_s.cyan}" if decimal_value
 
-                puts "#{indent}| #{string}"
+                final_sig = index == wires.size - 1
+                indent = element_indent(final_sig, final_type)
+
+                puts "#{pf}#{indent}#{string}"
             end
         end
 
         return unless deep_print
 
-        @subnetworks.each_value do |network|
-            puts indent
+        @subnetworks.values.each_with_index do |network, index|
+            puts "#{pf}#{new_line(final)}"
 
-            network.print(full_print, deep_print)
+            network.print(full_print, deep_print, pf, index == @subnetworks.size - 1)
         end
+    end
+
+    def element_indent(final = false, final_type = false)
+        base(final_type) + leaf(final)
+    end
+
+    def type_indent(final = false)
+        leaf(final)
+    end
+
+    def new_line(final = false)
+        "│"
+    end
+
+    def leaf(final = false)
+        final ? '└─ ' : '├─ '
+    end
+
+    def base(final = false)
+        final ? '   ' : '│  '
+    end
+
+    def root?
+        depth == 0
     end
 
     def inspect

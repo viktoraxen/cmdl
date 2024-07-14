@@ -36,8 +36,8 @@ class Scope
     def _find_scope_down(id)
         return self if id == ''
 
-        top_level = id.split('.').first
-        deep_levels = id.split('.')[1..].join('.')
+        top_level = id.split('::').first
+        deep_levels = id.split('::')[1..].join('::')
 
         return @subscopes[top_level]._find_scope_down(deep_levels) if @subscopes.key? top_level
 
@@ -49,7 +49,7 @@ class Scope
     end
 
     def full_name
-        return "#{@parent_scope.full_name}.#{@id}" if @parent_scope
+        return "#{@parent_scope.full_name}::#{@id}" if @parent_scope
 
         @id
     end
@@ -73,7 +73,6 @@ class Scope
     end
 
     def print(pf = "", final = true)
-
         puts "#{pf}#{leaf(final)}#{@id.light_red}"
 
         new_pf = root? ? '' : "#{pf}#{base(final)}"

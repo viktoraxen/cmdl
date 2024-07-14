@@ -430,7 +430,6 @@ class Template
     # Debug
     #
 
-    # def print(final, subnetworks)
     def print(pf, final, subnets)
         @signals.each_with_index do |(type, signals), index|
             next if signals.empty?

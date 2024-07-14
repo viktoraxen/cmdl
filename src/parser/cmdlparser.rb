@@ -208,7 +208,7 @@ class CmdlParser < Parser
             #
             
             rule :component_ref do
-                match(:component_ref, '::', :identifier) { |ids, _, id| ids.append_id(".#{id.value}"); ids }
+                match(:component_ref, '::', :identifier) { |ids, _, id| ids.append_id("::#{id.value}"); ids }
                 match(:identifier)                       { |id        | id }
             end
 
