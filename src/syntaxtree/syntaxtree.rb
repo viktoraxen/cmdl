@@ -32,8 +32,6 @@ class SyntaxTree
 
         code_node = node.children.find { |child| child.is_a?(CodeBlockNode) }
 
-        # code_node.declaration_statements_node.evaluate(scope)
-
         code_node.component_statement_nodes.each do |child|
             subscope_structure = scope_structure(child)
 

@@ -4,6 +4,7 @@ require_relative '../log/log'
 require_relative '../scope'
 
 class ASTNode
+
     attr_accessor :value, :children, :parent
 
     def initialize(*children, value: nil)
@@ -66,12 +67,45 @@ class ASTNode
         self.class.to_s
     end
 
-    def print
-        puts ('|  ' * depth) + to_s
+    def color(obj)
+        colors = {
+            StatementListNode => :blue,
+            ComponentNode     => :red,
+            RootNode          => :red,
+            :default          => :white
+        }
 
-        puts ('|  ' * (depth + 1)) + @value.to_s if leaf?
+        return colors[obj.class] if colors.key? obj.class
+        colors[:default]
+    end
 
-        children.each { |child| child&.print }
+    def node_color
+        color(self)
+    end
+
+    def prefix_color
+        color(@parent)
+    end
+
+    def print(pf = "", final = true)
+        puts "#{pf}#{leaf(final).colorize(prefix_color)}#{to_s.colorize(node_color)}"
+        puts "#{pf}#{base(final).colorize(prefix_color)}#{leaf(true)}#{@value.green}" if leaf?
+
+        new_pf = root? ? '' : "#{pf}#{base(final)}"
+
+        nodes_to_print = children.select { |child| !child.nil? }
+
+        nodes_to_print.each.each_with_index do |child, index| 
+            child.print(new_pf, index == nodes_to_print.size - 1)
+        end
+    end
+
+    def leaf(final = false)
+        root? ? '' : (final ? '└─ ' : '├─ ')
+    end
+
+    def base(final = false)
+        root? ? '' : (final ? '   ' : '│  ').colorize(prefix_color)
     end
 
     def evaluate(*)
