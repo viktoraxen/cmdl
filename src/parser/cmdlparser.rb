@@ -18,8 +18,12 @@ class CmdlParser < Parser
             token(/,/)       { |m| m }
             token(/\.\./)    { |m| m }
             token(/\./)      { |m| m }
-            token(/::/)       { |m| m }
+            token(/::/)      { |m| m }
             token(/:/)       { |m| m }
+            token(/\^/)      { |m| m }
+            token(/!/)       { |m| m }
+            token(/&/)       { |m| m }
+            token(/\|/)      { |m| m }
 
             token(/[a-zA-Z][a-zA-Z_0-9]*/) { |m| m }
             token(/-?\d+/)                 { |m| m }
@@ -30,21 +34,19 @@ class CmdlParser < Parser
             end
 
             rule :code_block do
-                # match(:code_block, :statement) { |node, statement| node.add_child(statement) }
-                # match(:statement)              { |statement      | CodeBlockNode.new(statement) }
                 match(:statements) { |statements| CodeBlockNode.new(statements) }
-                match              { CodeBlockNode.new() }
+                match              { CodeBlockNode.new }
             end
 
             rule :statements do
                 match(:statements, :statement) { |statements, statement| statements.add_child(statement) }
-                match(:statement)              { |statement              | StatementListNode.new(statement) }
+                match(:statement)              { |statement| StatementListNode.new(statement) }
             end
 
             rule :statement do
                 match(:component)   { |a| a }
-                match(:assignment)  { |a| a }
                 match(:declaration) { |a| a }
+                match(:assignment)  { |a| a }
             end
 
             #
@@ -65,17 +67,17 @@ class CmdlParser < Parser
 
             rule :component_inputs do
                 match(:component_inputs, ',', :component_input) { |inputs, _, input| inputs.add_child(input) }
-                match(:component_input)                         { |input           | ComponentInputListNode.new(input) }
+                match(:component_input)                         { |input| ComponentInputListNode.new(input) }
             end
 
             rule :component_input do
                 match(:identifier, ':', :number) { |id, _, width| ComponentInputSubscriptNode.new(id, width) }
-                match(:identifier)               { |id          | ComponentInputNode.new(id)                 }
+                match(:identifier)               { |id| ComponentInputNode.new(id) }
             end
 
             rule :component_outputs do
                 match(:component_outputs, ',', :component_output) { |outputs, _, output| outputs.add_child(output) }
-                match(:component_output)                          { |output            | ComponentOutputListNode.new(output) }
+                match(:component_output)                          { |output| ComponentOutputListNode.new(output) }
             end
 
             rule :component_output do
@@ -100,12 +102,12 @@ class CmdlParser < Parser
 
             rule :declarators do
                 match(:declarators, ',', :declarator) { |ids, _, id| ids.add_child(id) }
-                match(:declarator)                    { |id        | DeclaratorListNode.new(id)  }
+                match(:declarator)                    { |id| DeclaratorListNode.new(id) }
             end
 
             rule :declarator do
                 match(:identifier, ':', :number) { |id, _, width| DeclaratorSubscriptNode.new(id, width) }
-                match(:identifier)               { |id          | DeclaratorNode.new(id)             }
+                match(:identifier)               { |id| DeclaratorNode.new(id) }
             end
 
             #
@@ -121,12 +123,12 @@ class CmdlParser < Parser
 
             rule :receivers do
                 match(:receivers, ',', :receiver) { |ids, _, id| ids.add_child(id) }
-                match(:receiver)                  { |id        | AssignmentReceiverListNode.new(id)  }
+                match(:receiver)                  { |id| AssignmentReceiverListNode.new(id) }
             end
 
             rule :receiver do
                 match(:identifier, :subscript) { |id, subs| AssignmentReceiverSubscriptNode.new(id, subs) }
-                match(:identifier)             { |id      | AssignmentReceiverNode.new(id)                }
+                match(:identifier)             { |id| AssignmentReceiverNode.new(id)                }
             end
 
             #
@@ -135,8 +137,8 @@ class CmdlParser < Parser
             #
 
             rule :expressions do
-                match(:expressions, ',', :expression) { |exprs, _, expr | exprs.add_child(expr) }
-                match(:expression)                    { |expr           | ExpressionListNode.new(expr)    }
+                match(:expressions, ',', :expression) { |exprs, _, expr| exprs.add_child(expr) }
+                match(:expression)                    { |expr| ExpressionListNode.new(expr) }
             end
 
             rule :expression do
@@ -144,29 +146,36 @@ class CmdlParser < Parser
             end
 
             rule :expression_or do
-                match(:expression_or, 'or', :expression_and) do |lh, op, rh|
-                    BinaryExpressionNode.new(lh, StringNode.new(op), rh)
+                match(:expression_or, :operator_or, :expression_and) do |lh, op, rh|
+                    BinaryExpressionNode.new(lh, op, rh)
                 end
                 match(:expression_and) { |expr| expr }
             end
 
             rule :expression_and do
-                match(:expression_and, 'and', :expression_not) do |lh, op, rh|
-                    BinaryExpressionNode.new(lh, StringNode.new(op), rh)
+                match(:expression_and, :operator_and, :expression_merge) do |lh, op, rh|
+                    BinaryExpressionNode.new(lh, op, rh)
+                end
+                match(:expression_merge) { |expr| expr }
+            end
+
+            rule :expression_merge do
+                match(:expression_merge, :operator_merge, :expression_not) do |lh, op, rh|
+                    BinaryExpressionNode.new(lh, op, rh)
                 end
                 match(:expression_not) { |expr| expr }
             end
 
             rule :expression_not do
-                match('not', :expression_not) do |op, expr|
-                    UnaryExpressionNode.new(StringNode.new(op), expr)
+                match(:operator_not, :expression_not) do |op, expr|
+                    UnaryExpressionNode.new(op, expr)
                 end
                 match(:expression_subscript) { |expr| expr }
             end
 
             rule :expression_subscript do
                 match(:expression_subscript, :subscript) { |expr, subs| ExpressionSubscriptNode.new(expr, subs) }
-                match(:expression_component)             { |expr      | expr                                    }
+                match(:expression_component)             { |expr| expr                                    }
             end
 
             rule :expression_component do
@@ -177,25 +186,25 @@ class CmdlParser < Parser
             end
 
             rule :expression_primary do
-                match('(', :expressions, ')') { |_, expr, _| expr                              }
-                match(:constant)              { |const     | ExpressionConstantNode.new(const) }
-                match(:identifier)            { |id        | ExpressionIdentifierNode.new(id)  }
+                match('(', :expressions, ')') { |_, expr, _| expr }
+                match(:constant)              { |const| ExpressionConstantNode.new(const) }
+                match(:identifier) { |id| ExpressionIdentifierNode.new(id) }
             end
 
             #
             # Subscript
             # [Ref, Span]
             #
-            
+
             rule :subscript do
-                match('.', :span,) { |_, span | span  }
+                match('.', :span) { |_, span| span }
                 match('.', :index) { |_, index| index }
             end
 
             rule :span do
                 match(:number, ':', :number) { |start, _, stop| SpanNode.new(start, stop) }
-                match(':', :number)          { |_, stop       | SpanNode.new(nil,   stop) }
-                match(:number, ':')          { |start, _      | SpanNode.new(start, nil)  }
+                match(':', :number)          { |_, stop| SpanNode.new(nil, stop) }
+                match(:number, ':')          { |start, _| SpanNode.new(start, nil) }
             end
 
             rule :index do
@@ -203,18 +212,48 @@ class CmdlParser < Parser
             end
 
             #
+            # Operator
+            #
+
+            rule :operator_or do
+                match('or') { |op| StringNode.new(op) }
+                match('|') { |op| StringNode.new('or') }
+            end
+
+            rule :operator_and do
+                match('and') { |op| StringNode.new(op) }
+                match('&') { |op| StringNode.new('and') }
+            end
+
+            rule :operator_merge do
+                match('cat') { |op| StringNode.new(op) }
+                match('^') { |op| StringNode.new('cat') }
+            end
+
+            rule :operator_not do
+                match('not') { |op| StringNode.new(op) }
+                match('!') { |op| StringNode.new('not') }
+            end
+
+            #
             # Primitives
             # [Id]
             #
-            
+
             rule :component_ref do
-                match(:component_ref, '::', :identifier) { |ids, _, id| ids.append_id("::#{id.value}"); ids }
-                match(:identifier)                       { |id        | id }
+                match(:component_ref, '::', :identifier) do |ids, _, id|
+                    ids.append_id("::#{id.value}")
+                    ids
+                end
+                match(:identifier) { |id| id }
             end
 
             rule :identifier_dotsep do
-                match(:identifier_dotsep, '.', :identifier) { |ids, _, id| ids.append_id(".#{id.value}"); ids }
-                match(:identifier)                          { |id        | id }
+                match(:identifier_dotsep, '.', :identifier) do |ids, _, id|
+                    ids.append_id(".#{id.value}")
+                    ids
+                end
+                match(:identifier) { |id| id }
             end
 
             rule :identifiers do
@@ -228,7 +267,7 @@ class CmdlParser < Parser
 
             rule :constant do
                 match(:decimal, ':', :decimal) { |num, _, width| ConstantSubscriptNode.new(num, width) }
-                match(:decimal)                { |num          | ConstantNode.new(num)                 }
+                match(:decimal)                { |num| ConstantNode.new(num) }
             end
 
             rule :number do

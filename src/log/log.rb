@@ -8,12 +8,12 @@ require 'colorize'
 PRINT_WIDTH = 50
 
 class Log
-    @@colors = [
-        :light_cyan,
-        :light_blue,
-        :light_magenta,
-        :light_green,
-        :light_yellow
+    @@colors = %i[
+        light_cyan
+        light_blue
+        light_magenta
+        light_green
+        light_yellow
     ]
 
     @@logger = nil

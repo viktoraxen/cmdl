@@ -33,7 +33,7 @@ def get_flags
 end
 
 def get_filename
-    return ARGV.first
+    ARGV.first
 end
 
 if ARGV.empty?
@@ -49,7 +49,7 @@ if ARGV.empty?
 
     $flags.each do |flag, description|
         flag_string = [flag_shorthand(flag), flag].join(', ')
-        puts "    #{flag_string.ljust(flag_width )}  #{description}"
+        puts "    #{flag_string.ljust(flag_width)}  #{description}"
     end
 else
     cmdl_file(get_filename, get_flags)

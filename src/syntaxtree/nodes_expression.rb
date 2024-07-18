@@ -137,6 +137,8 @@ class UnaryExpressionNode < ASTNode
         operation = op_node.evaluate
         debug_log 'Operation:', operation
 
+        assert_valid_unary_expression(scope, expr_output_refs, operation)
+
         scope.template.add_unary(operation, expr_output_refs)
     end
 end

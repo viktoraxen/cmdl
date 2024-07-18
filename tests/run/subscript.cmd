@@ -142,9 +142,6 @@ end
 signal a: 2, b
 a <= Xor(b).:2
 
-<< Expression subscript
-signal a, b, c <= 1, 0, 1
-
 << Multiple signal index
 < a: 1
 < b: 0
@@ -164,10 +161,16 @@ signal f: 4 <= 13: 4
 signal a: 2, b: 2, c: 2 <= (d, e, f).1:3
 
 << Multiple expressions index
+< a: b0
+< b: b1
+< c: b1
+< d: b101
+< e: b010
+< f: b111
 signal d: 3 <= 5: 3
 signal e: 3 <= 2: 3
 signal f: 3 <= 7: 3
-signal a, b, c <= (d and e, f or e, d or e and not f).2
+signal a, b, c <= (d and e, f or e, d or e and not f).0
 
 << Multiple expressions range
 signal d: 3 <= 5: 3

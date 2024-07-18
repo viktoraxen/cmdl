@@ -63,7 +63,7 @@ class TestFile
             result_str = "#{symbol} #{stop_stage} : #{test.name}".colorize(color)
             unless exception.nil?
                 result_str += " - #{exception.class}" if exception.is_a? StandardError
-                exception_location = exception.backtrace.first.match(/\/(?<loc>.*:\d*)/)[:loc].split('/').last if exception.is_a? StandardError
+                exception_location = exception.backtrace.first.match(%r{/(?<loc>.*:\d*)})[:loc].split('/').last if exception.is_a? StandardError
                 result_str += " - #{exception_location}" unless exception_location.nil?
                 result_str += " - #{exception.to_s.strip}"
             end
@@ -78,11 +78,11 @@ class TestFile
 
         _print_results
 
-        return @skipped_tests, @warnings, @passed_tests, @failed_tests, @total_tests
+        [@skipped_tests, @warnings, @passed_tests, @failed_tests, @total_tests]
     end
 
     def _print_results
-        skip_str   = @skipped_tests.to_s.gray
+        skip_str = @skipped_tests.to_s.gray
         warning_str = @warnings.to_s.yellow
         failed_str = @failed_tests.to_s.red
         passed_str = @passed_tests.to_s.green
@@ -108,7 +108,7 @@ class Test
         @content = content
         @parser  = parser
 
-        params = _get_params(tags)
+        params = get_params(tags)
 
         @should_finish    = params[:should_finish]
         @valid_exceptions = params[:valid_exceptions]
@@ -127,7 +127,7 @@ class Test
 
     def run
         return :skipped, :skipped if @skip
-        return :warning, :warning, "Test content empty" if @content.strip.empty?
+        return :warning, :warning, 'Test content empty' if @content.strip.empty?
 
         t0 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
 
@@ -138,9 +138,9 @@ class Test
             validate unless @stop_stage < 4
         rescue *@valid_exceptions
             result = :success, :threw
-        rescue => e
+        rescue StandardError => e
             result = :failure, :threw, e
-        else 
+        else
             result = :failure, :finished
             result = :success, :finished if @should_finish
         ensure
@@ -149,7 +149,7 @@ class Test
             @elapsed_time = (t1 - t0) * 1000
         end
 
-        return result
+        result
     end
 
     def parse
@@ -192,7 +192,7 @@ class Test
         end
     end
 
-    def _get_params(tags)
+    def get_params(tags)
         params = {
             should_finish:    true,
             valid_exceptions: [],
@@ -214,7 +214,7 @@ class Test
             'parse'      => 1,
             'evaluate'   => 2,
             'synthesize' => 3,
-            'validate'   => 4,
+            'validate'   => 4
         }
 
         params[:stop_stage] = stop_stage_map[stop_stage] unless stop_stage.nil?
@@ -223,22 +223,20 @@ class Test
 
         params[:should_finish] = fail_tag.nil?
 
-        if !params[:should_finish]
-            params[:valid_exceptions] = _get_valid_exceptions(fail_tag)
-        end
+        params[:valid_exceptions] = _get_valid_exceptions(fail_tag) unless params[:should_finish]
 
-        params[:expected_results] = tags.map do |tag| 
+        params[:expected_results] = tags.map do |tag|
             match = tag.strip.match(/^(?<name>\w+)\s*:\s*(?<value>b[x01]+|\d+)\s*:?\s*(?<width>\d+)?$/)
 
-            next if match.to_s == ""
+            next if match.to_s == ''
 
             name, value, width = match.captures
 
-            if value[0] == 'b'
-                value = value[1..]
-            else
-                value = value.to_i.to_s(2).rjust(width.to_i, '0')
-            end
+            value = if value[0] == 'b'
+                        value[1..]
+                    else
+                        value.to_i.to_s(2).rjust(width.to_i, '0')
+                    end
 
             [name, value]
         end
@@ -247,5 +245,4 @@ class Test
 
         params
     end
-
 end

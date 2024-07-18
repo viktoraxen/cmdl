@@ -19,6 +19,8 @@ def assert_valid_assignment(scope, receiver_refs, value_refs)
     rec_num = receiver_refs.size
     val_num = value_refs.size
 
+    assert_signals_declared(scope, receiver_refs + value_refs)
+
     unless rec_num == val_num
         raise AssignmentNumberMismatchError,
               "Number of receivers (#{rec_num}) does not match number of values (#{val_num})."
@@ -44,6 +46,11 @@ end
 def assert_valid_component_signature(comp_id, input_refs, output_refs)
     invalid_inputs = _get_invalid_widths(input_refs)
     invalid_outputs = _get_invalid_widths(output_refs)
+
+    unless comp_id[0] == comp_id[0].upcase
+        raise ComponentInvalidIdentifierError,
+              "Invalid component identifier: #{comp_id}. Component identifiers must be capitalized."
+    end
 
     unless invalid_inputs.empty?
         raise ComponentInputInvalidWidthError,
@@ -99,10 +106,10 @@ def assert_valid_constraint(constraint)
 end
 
 def assert_valid_gate_operation(operation)
-    if operation.nil?
-        raise ConstraintInvalidOperationError,
-              'Null operation'
-    end
+    return unless operation.nil?
+
+    raise ConstraintInvalidOperationError,
+          'Null operation'
 end
 
 #
@@ -144,6 +151,8 @@ def assert_valid_component_expression(scope, comp_id, input_refs)
               "Could not find component #{comp_id} from scope #{scope.id}."
     end
 
+    assert_signals_declared(scope, input_refs)
+
     component_num_inputs = component_scope.template.num_inputs
     num_inputs = input_refs.size
 
@@ -174,6 +183,10 @@ def assert_valid_binary_expression(scope, lh_refs, rh_refs, operation)
               "Number of left hand operands (#{lh_size}) does not match number of right hand operands (#{rh_size})."
     end
 
+    assert_signals_declared(scope, lh_refs + rh_refs)
+
+    return if operation == 'cat'
+
     lh_refs.zip(rh_refs) do |lh, rh|
         lh_width = scope.template.signal_reference_width(lh)
         rh_width = scope.template.signal_reference_width(rh)
@@ -184,10 +197,19 @@ def assert_valid_binary_expression(scope, lh_refs, rh_refs, operation)
         end
     end
 
-    unless ['and', 'or', 'not'].include?(operation)
-        raise ExpressionInvalidOperationError,
-              "Invalid operation: #{operation}, allowed operations are 'and', 'or', 'not'."
-    end
+    return if ['and', 'or', 'not'].include?(operation)
+
+    raise ExpressionInvalidOperationError,
+          "Invalid operation: #{operation}, allowed operations are 'and', 'or', 'not'."
+end
+
+def assert_valid_unary_expression(scope, input_refs, operation)
+    assert_signals_declared(scope, input_refs)
+
+    return if ['not'].include?(operation)
+
+    raise ExpressionInvalidOperationError,
+          "Invalid unary operation: #{operation}, allowed operations are 'not'."
 end
 
 #
@@ -198,18 +220,20 @@ def assert_valid_unary_gate(connection)
     inputs = connection.inputs
     input_size = inputs.size
 
-    unless input_size == 1
-        raise GateUnaryInputError,
-              "Unary gate #{connection.operation} requires exactly 1 input, found #{input_size} (#{inputs.join(', ')}"
-    end
+    return if input_size == 1
+
+    raise GateUnaryInputError,
+          "Unary gate #{connection.operation} requires exactly 1 input, found #{input_size} (#{inputs.join(', ')}"
 
     # TODO: More checks?
 end
 
 def assert_valid_binary_gate(connection)
     # TODO: Implement
+end
 
-
+def assert_valid_merge_gate(connection)
+    # TODO: Implement
 end
 
 #
@@ -217,10 +241,10 @@ end
 #
 
 def assert_valid_identifier(id)
-    if ['not', 'and', 'or'].include?(id)
-        raise ForbiddenIdentifierError,
-              "Identifier '#{id}' is forbidden."
-    end
+    return unless ['not', 'and', 'or'].include?(id)
+
+    raise ForbiddenIdentifierError,
+          "Identifier '#{id}' is forbidden."
 end
 
 #
@@ -235,24 +259,24 @@ def assert_valid_scope_node(node)
 
     if node.children.select { |c| c.is_a? ComponentSignatureNode }.size > 1
         raise ScopeSignatureError,
-              "Scope node must contain at most one component signature."
+              'Scope node must contain at most one component signature.'
     end
 
-    if node.children.select { |c| c.is_a? CodeBlockNode }.size > 1
-        raise ScopeCodeBlockError,
-              "Scope node must contain at most one code block."
-    end
+    return unless node.children.select { |c| c.is_a? CodeBlockNode }.size > 1
+
+    raise ScopeCodeBlockError,
+          'Scope node must contain at most one code block.'
 end
 
 def assert_valid_subscope(scope, subscope)
-    if scope.contains_scope? subscope.id
-        raise ScopeDuplicateSubscopeError,
-              "Duplicate scope identifier in scope #{scope.id}: #{subscope.id}"
-    end
+    return unless scope.contains_scope? subscope.id
+
+    raise ScopeDuplicateSubscopeError,
+          "Duplicate scope identifier in scope #{scope.id}: #{subscope.id}"
 end
 
-def assert_valid_scope(scope, id = nil)
-    raise ScopeNullError, "Scope #{id} is null." if scope.nil?
+def assert_valid_scope(scope)
+    raise ScopeNullError, 'Scope is null.' if scope.nil?
 
     assert_valid_template scope.template
 end
@@ -262,10 +286,10 @@ end
 #
 
 def assert_signal_exists(scope, signal_id)
-    unless scope.template._signal_exists? signal_id
-        raise SignalNotFoundError,
-              "Signal #{signal_id} not found in scope #{scope.id}."
-    end
+    return if scope.template._signal_exists? signal_id
+
+    raise SignalNotFoundError,
+          "Signal #{signal_id} not found in scope #{scope.id}."
 end
 
 #
@@ -280,13 +304,10 @@ def assert_valid_subscript(scope, signal_ref, subscript = nil)
               "Subscript is null for signal #{signal_ref.id}."
     end
 
-    signal_id = signal_ref.id
-    signal_width = scope.template.signal_width signal_id
+    assert_signal_declared(scope, signal_ref)
 
-    if signal_width.nil?
-        raise SubscriptSignalUndefinedError,
-              "Signal #{signal_id} is not defined in scope #{scope.id}."
-    end
+    signal_id    = signal_ref.id
+    signal_width = scope.template.signal_width signal_id
 
     unless subscript.start.nil?
         start_reach = subscript.start.abs
@@ -294,30 +315,30 @@ def assert_valid_subscript(scope, signal_ref, subscript = nil)
 
         if start_reach > signal_width
             raise SubscriptIndexOutOfBoundsError,
-                "Index #{subscript.start} out of bounds for signal #{signal_id} with width #{signal_width}."
+                  "Index #{subscript.start} out of bounds for signal #{signal_id} with width #{signal_width}."
         end
     end
 
-    unless subscript.stop.nil?
-        end_reach = subscript.stop.abs - 1
-        end_reach += 1 if subscript.stop >= 0
+    return if subscript.stop.nil?
 
-        if end_reach > signal_width
-            raise SubscriptIndexOutOfBoundsError,
-                "Index #{subscript.stop} out of bounds for signal #{signal_id} with width #{signal_width}."
-        end
-    end
+    end_reach = subscript.stop.abs - 1
+    end_reach += 1 if subscript.stop >= 0
+
+    return unless end_reach > signal_width
+
+    raise SubscriptIndexOutOfBoundsError,
+          "Index #{subscript.stop} out of bounds for signal #{signal_id} with width #{signal_width}."
 end
 
 def assert_valid_span_values(start, stop)
     if start.nil? && stop.nil?
         raise SpanNullIndexError,
-            'Start and end of span cannot both be null.'
+              'Start and end of span cannot both be null.'
     end
 
     if (!start.nil? && !stop.nil?) &&
-        ((start >= 0 && stop >= 0 && start > stop) ||
-        (start.negative? && stop.negative? && start > stop))
+       ((start >= 0 && stop >= 0 && start > stop) ||
+       (start.negative? && stop.negative? && start > stop))
         raise SpanInvalidRangeError,
               "Start index must be before end index: #{start}..#{stop}."
     end
@@ -333,10 +354,23 @@ def assert_valid_template(template)
     name = template.scope.full_name
     undeclared_signals = template.undeclared_signals
 
-    unless undeclared_signals.empty?
-        raise TemplateUndeclaredSignalsError,
-              "Template #{name} contains undeclared signals: #{undeclared_signals.join(', ')}"
+    return if undeclared_signals.empty?
+
+    raise TemplateUndeclaredSignalsError,
+          "Template #{name} contains undeclared signals: #{undeclared_signals.join(', ')}"
+end
+
+def assert_signals_declared(scope, refs)
+    refs.each do |ref|
+        assert_signal_declared(scope, ref)
     end
+end
+
+def assert_signal_declared(scope, ref)
+    return if scope.template.signal_declared? ref.id
+
+    raise UndeclaredSignalError,
+          "Signal #{ref.id} is not declared in scope #{scope.id}."
 end
 
 #

@@ -41,20 +41,25 @@ end
 
 << Nestling
 component Xor(a, b) => c
-    component cor(a, b) => c
-        component nor(a, b) => c
+    component Cor(a, b) => c
+        component Cor(a, b) => c
         end
     end
-    component bor(a, b) => c
+    component Por(a, b) => c
         component Xor(a, b) => c
         end
-        component vor(a, b) => c
+        component Cor(a, b) => c
             component Xor(a, b) => c
             end
         end
     end
-    component sor(a, b) => c
+    component Mor(a, b) => c
     end
+end
+
+<< Invalid identifier
+< fail: ComponentInvalidIdentifierError
+component xor(a, b) => c
 end
 
 << Duplicate identifier

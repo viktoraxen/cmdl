@@ -8,11 +8,10 @@ class Scope
     attr_accessor :parent_scope
 
     def initialize(id, parent_scope = nil)
-        @id         = id.nil? ? 'Network' : id
+        @id           = id.nil? ? 'Network' : id
         @parent_scope = parent_scope
         @subscopes    = {}
         @template     = Template.new(self)
-        # @networks     = {}
     end
 
     def synthesize
@@ -72,13 +71,13 @@ class Scope
         @parent_scope.depth + 1
     end
 
-    def print(pf = "", final = true)
+    def print(pf = '', final = true)
         puts "#{pf}#{leaf(final)}#{@id.light_red}"
 
         new_pf = root? ? '' : "#{pf}#{base(final)}"
         @template.print(new_pf, final, !@subscopes.empty?)
 
-        @subscopes.each_with_index do |(_, scope), index| 
+        @subscopes.each_with_index do |(_, scope), index|
             puts "#{pf}#{new_line(final)}"
             scope.print(new_pf, index == @subscopes.size - 1)
         end
@@ -89,10 +88,18 @@ class Scope
     end
 
     def leaf(final = false)
-        root? ? '' : (final ? '└─ ' : '├─ ')
+        if root?
+            ''
+        else
+            (final ? '└─ ' : '├─ ')
+        end
     end
 
     def base(final = false)
-        root? ? '' : (final ? '   ' : '│  ')
+        if root?
+            ''
+        else
+            (final ? '   ' : '│  ')
+        end
     end
 end

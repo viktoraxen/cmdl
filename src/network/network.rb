@@ -136,6 +136,8 @@ class Network
             _gate_add_unary(connection)
         elsif _gate_is_binary? connection
             _gate_add_binary(connection)
+        elsif _gate_is_merge? connection
+            _gate_add_merge(connection)
         else
             assert_not_reached "Network._gate_add: Invalid gate operation: #{connection.operation}"
         end
@@ -149,7 +151,7 @@ class Network
 
         inputs.zip(outputs).each do |input, output|
             # TODO: Add to constraints list
-            
+
             case connection.operation
             when 'not'
                 NotGate.new(connection.name, input, output)
@@ -181,6 +183,17 @@ class Network
         end
     end
 
+    def _gate_add_merge(connection)
+        assert_valid_merge_gate(connection)
+
+        inputs = _gate_inputs_merge(connection)
+        outputs = _gate_outputs(connection)
+
+        inputs.zip(outputs).each do |input, output|
+            AssignGate.new(connection.name, input, output)
+        end
+    end
+
     def _gate_inputs_unary(connection)
         connection.inputs.map do |reference|
             _get_wires_by_reference(reference)
@@ -194,22 +207,33 @@ class Network
         lh_inputs.zip(rh_inputs)
     end
 
+    def _gate_inputs_merge(connection)
+        # Reverse to make behaviour more intuitive
+        connection.inputs.reverse.map do |reference|
+            _get_wires_by_reference(reference)
+        end.flatten
+    end
+
     def _gate_outputs(connection)
         connection.outputs.map do |reference|
             _get_wires_by_reference(reference)
         end.flatten
     end
 
-    def _gate_is_unary? connection
+    def _gate_is_unary?(connection)
         ['not', 'assign'].include? connection.operation
     end
 
-    def _gate_is_binary? connection
+    def _gate_is_binary?(connection)
         ['and', 'or'].include? connection.operation
     end
 
+    def _gate_is_merge?(connection)
+        ['cat'].include? connection.operation
+    end
+
     def _connection_is_gate?(connection)
-        ['and', 'or', 'not', 'assign'].include?(connection.operation)
+        _gate_is_unary?(connection) || _gate_is_binary?(connection) || _gate_is_merge?(connection)
     end
 
     def _get_wires_by_reference(reference)
@@ -241,7 +265,7 @@ class Network
         @parent.depth + 1
     end
 
-    def print(full_print = false, deep_print = false, pf = "", final = true)
+    def print(full_print = false, deep_print = false, pf = '', final = true)
         puts "#{pf}#{root? ? '' : leaf(final)}#{@name.light_red}"
         pf = root? ? '' : "#{pf}#{base(final)}"
 
@@ -292,8 +316,8 @@ class Network
         leaf(final)
     end
 
-    def new_line(final = false)
-        "│"
+    def new_line
+        '│'
     end
 
     def leaf(final = false)

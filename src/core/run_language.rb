@@ -25,4 +25,3 @@ def cmdl_file(filename, flags)
     # result = network.get_state
     # puts result
 end
-

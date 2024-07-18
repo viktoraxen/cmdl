@@ -69,9 +69,9 @@ end
 
 class AndGate < BinaryConstraint
     def initialize(name, input1, input2, output)
-        @operation = -> { @inputs[0].value and @inputs[1].value}
+        @operation = -> { @inputs[0].value and @inputs[1].value }
 
-        super(name, input1, input2, output)
+        super
 
         @type = 'and'
     end
@@ -79,9 +79,9 @@ end
 
 class OrGate < BinaryConstraint
     def initialize(name, input1, input2, output)
-        @operation = -> { @inputs[0].value or @inputs[1].value}
+        @operation = -> { @inputs[0].value or @inputs[1].value }
 
-        super(name, input1, input2, output)
+        super
 
         @type = 'or'
     end
@@ -101,7 +101,9 @@ end
 class NotGate < UnaryConstraint
     def initialize(name, input, output)
         @operation = -> { !@inputs[0].value }
-        super(name, input, output)
+
+        super
+
         @type = 'not'
     end
 end
@@ -109,7 +111,9 @@ end
 class AssignGate < UnaryConstraint
     def initialize(name, input, output)
         @operation = -> { @inputs[0].value }
-        super(name, input, output)
+
+        super
+
         @type = 'assign'
     end
 end

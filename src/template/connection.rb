@@ -11,7 +11,7 @@ class ConnectionTemplate
         @composite = composite
     end
 
-    def name 
+    def name
         "#{operation}(#{inputs.map(&:name).join(',')})->#{outputs.map(&:name).join(',')}"
     end
 

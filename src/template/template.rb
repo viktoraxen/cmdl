@@ -133,7 +133,7 @@ class Template
     end
 
     def _signal_declare(id)
-        return unless _signal_exists? id and not signal_declared? id
+        return unless _signal_exists? id and !signal_declared? id
 
         _signal_find(id).declared = true
     end
@@ -208,8 +208,16 @@ class Template
         step = subscript.step.nil? ? 1 : subscript.step
 
         # Magic from Gemini
-        start = start.nil? ? 0      : (start < 0 ? [start + length, 0].max : start)
-        stop  = stop.nil?  ? length : (stop  < 0 ? [stop  + length, 0].max : stop)
+        start = if start.nil?
+                    0
+                else
+                    (start < 0 ? [start + length, 0].max : start)
+                end
+        stop  = if stop.nil?
+                    length
+                else
+                    (stop < 0 ? [stop + length, 0].max : stop)
+                end
 
         width = if step.positive?
                     (stop - start - 1) / step
@@ -301,15 +309,9 @@ class Template
 
     def add_unary(operation, input_refs)
         input_refs.map do |input_ref|
-            id        = input_ref.id
-            subscript = input_ref.subscript
-
-            # Ensure signal exists, otherwise created with nil width and as undeclared
-            _signal_ensure(id)
-
             # Create output signal, same width as input
             output_name   = _gate_output_name(operation, input_ref)
-            output_width  = _signal_subscript_width(id, subscript)
+            output_width  = _gate_output_width(operation, input_ref)
 
             output_signal = _signal_create(output_name, output_width, declared: true)
 
@@ -328,25 +330,9 @@ class Template
 
     def add_binary(operation, lh_refs, rh_refs)
         lh_refs.zip(rh_refs).map do |lh_ref, rh_ref|
-            lh_id        = lh_ref.id
-            lh_subscript = lh_ref.subscript
-
-            rh_id        = rh_ref.id
-            rh_subscript = rh_ref.subscript
-
-            # Ensure signals exist, otherwise created with nil width and as undeclared
-            _signal_ensure lh_id
-            _signal_ensure rh_id
-
-            # Create output signal, same width as input
+            # Create output signal
             output_name = _gate_output_name(operation, lh_ref, rh_ref)
-
-            # Width of output can only be set if both inputs have a width
-            lh_subscript_width = _signal_subscript_width(lh_id, lh_subscript)
-            rh_subscript_width = _signal_subscript_width(rh_id, rh_subscript)
-
-            output_width = nil
-            output_width = lh_subscript_width unless lh_subscript_width.nil? or rh_subscript_width.nil?
+            output_width = _gate_output_width(operation, lh_ref, rh_ref)
 
             output_signal = _signal_create(output_name, output_width, declared: true)
 
@@ -383,24 +369,52 @@ class Template
         output_refs
     end
 
+    def _add_gate(operation, *input_refs)
+        # Create output signal
+        output_name = _gate_output_name(operation, input_refs)
+        output_width = _gate_output_width(operation, input_refs)
+
+        output_signal = _signal_create(output_name, output_width, declared: true)
+
+        # Add output signal to signals
+        _signal_add_internal output_signal
+
+        output_ref = _signal_reference(output_name)
+
+        # Create connection
+        connection = _connection_create(operation, input_refs, [output_ref])
+        _connection_add connection
+
+        output_ref
+    end
+
     def _gate_output_name(operation, *input_refs)
         input_names = input_refs.map(&:name)
 
         case operation
         when 'not'
             operand = input_names.first
-            # Wrap operand in parentheses if it contains a gate with lower precedence
-            operand = "(#{operand})" if ['&', '|'].map { |s| operand.include? s }.any?
+            operand = "(#{operand})" if operand.count('^|&') > 0
             return "!#{operand}"
+        when 'cat'
+            operands = input_names.map { |n| n.count('|&') > 0 ? "(#{n})" : n }
+            return operands.join('^')
         when 'and'
-            # Wrap operands in parentheses if they contain gates with lower precedence
-            operands = input_names.map { |n| n.include?('|') ? "(#{n})" : n }
+            operands = input_names.map { |n| n.count('|') > 0 ? "(#{n})" : n }
             return operands.join('&')
         when 'or'
             return input_names.join('|')
         end
 
-        assert_not_reached "Template._gate_output_name passed operation case."
+        assert_not_reached 'Template._gate_output_name passed operation case.'
+    end
+
+    def _gate_output_width(operation, *input_refs)
+        widths = input_refs.map { |ref| _signal_subscript_width(ref) }
+
+        return widths.first if ['not', 'and', 'or'].include? operation
+
+        widths.sum
     end
 
     def _component_outputs(id, *input_refs)
@@ -443,7 +457,7 @@ class Template
             width = signals.values.map(&:id).map(&:length).max
 
             signals.each_with_index do |(name, signal), index|
-                string = "#{name.ljust(width)}".colorize(:light_green)
+                string = name.ljust(width).colorize(:light_green)
                 string = string.colorize(:light_yellow) if signal.id[0] =~ /[0-9]/
                 string = string.colorize(:light_red) unless signal_declared? name
 
@@ -460,7 +474,7 @@ class Template
         puts "#{pf}#{type_indent(!subnets)}#{'Connections'.light_blue}"
 
         type_width = @connections.keys.map(&:length).max
-        inputs_widths = @connections.values.map do |c| 
+        inputs_widths = @connections.values.map do |c|
             c.map do |connection|
                 connection.inputs.map(&:name).join(', ').length
             end
@@ -482,7 +496,6 @@ class Template
 
                 indent = element_indent(final_con, !subnets)
                 string = "#{operation} : #{inputs} -> #{outputs}"
-
 
                 puts "#{pf}#{indent}#{string}"
             end
