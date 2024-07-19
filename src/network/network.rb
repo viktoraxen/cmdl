@@ -252,11 +252,27 @@ class Network
         []
     end
 
-    def get_state
-        @wires[:user].to_h do |name, wires|
-            value = wires.reverse.map(&:value_b).join
-            [name, value]
+    def _signals_state
+        state = { name: @name }
+
+        %i[input output user].each do |sym|
+            @wires[sym]&.each do |name, wires|
+                value = wires.reverse.map(&:value_b).join
+                state[name] = value
+            end
         end
+
+        state
+    end
+
+    def state
+        state = _signals_state
+
+        @subnetworks.each do |name, network|
+            state[name] = network.state
+        end
+
+        state
     end
 
     def depth

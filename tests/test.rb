@@ -168,7 +168,7 @@ class Test
     end
 
     def validate
-        @results = @network.get_state
+        @results = @network.state
 
         @expected_results.each do |name, value|
             unless @results[name] == value

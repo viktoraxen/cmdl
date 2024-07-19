@@ -2,6 +2,7 @@
 
 require_relative '../parser/cmdlparser'
 require_relative '../network/network'
+require_relative '../utils/print'
 
 def cmdl_file(filename, flags)
     log_level = flags[:logging] ? Logger::DEBUG : Logger::ERROR
@@ -22,6 +23,6 @@ def cmdl_file(filename, flags)
     network = root_scope.synthesize
     network.print(flags[:full_network_print], flags[:deep_network_print]) if flags[:network_print]
 
-    # result = network.get_state
-    # puts result
+    result = network.state
+    print_h result if flags[:result_print]
 end

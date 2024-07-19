@@ -11,6 +11,7 @@ $flags = {
     '--network-print'      => 'Print the network',
     '--full-network-print' => 'Print all information about each network',
     '--deep-network-print' => 'Print the network with all components expanded',
+    '--result-print'       => 'Print the final state of the network',
     '--logging'            => 'Print the full log'
 }
 
