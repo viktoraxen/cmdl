@@ -1,57 +1,25 @@
-#!/home/viktor/.rvm/rubies/ruby-3.3.0/bin/ruby
+#!/usr/bin/env ruby
 
 # frozen_string_literal: true
 
 require_relative 'core/log/log'
-require_relative 'core/run_language'
+require_relative 'core/synthesize'
 
-$flags = {
-    '--syntax-tree-print'  => 'Print the syntax tree',
-    '--template-print'     => 'Print the template',
-    '--network-print'      => 'Print the network',
-    '--full-network-print' => 'Print all information about each network',
-    '--deep-network-print' => 'Print the network with all components expanded',
-    '--result-print'       => 'Print the final state of the network',
-    '--logging'            => 'Print the full log'
-}
+require_relative 'core/utils/print'
+require_relative 'core/cli/cli'
 
-def flag_shorthand(flag)
-    "-#{flag.scan(/--([a-z\-?]+)/).flatten.first[0]}"
-end
+cmdl_sim = CliApp.new('CMDL Simulator Interface', '0.1.0',
+                      'Simulator interface for CMDL.')
 
-def flag_symbol(flag)
-    flag.gsub(/^-+/, '').gsub('-', '_').to_sym
-end
+cmdl_sim.add_flag('s', 'syntax-tree-print',  'Print the syntax tree')
+cmdl_sim.add_flag('t', 'template-print',     'Print the template')
+cmdl_sim.add_flag('n', 'network-print',      'Print the network')
+cmdl_sim.add_flag('f', 'full-network-print', 'Print all information about each network')
+cmdl_sim.add_flag('d', 'deep-network-print', 'Print the network with all components expanded')
+cmdl_sim.add_flag('r', 'result-print',       'Print the final state of the network')
+cmdl_sim.add_flag('l', 'logging',            'Print the full log')
+cmdl_sim.add_flag('m', 'simulation',         'Open simulation interface')
 
-def get_flag(flag)
-    ARGV.map { |arg| [flag, flag_shorthand(flag)].include? arg }.any?
-end
+cmdl_sim.add_argument('filename', 'The CMDL file to synthesize.')
 
-def get_flags
-    $flags.keys.to_h do |flag|
-        [flag_symbol(flag), get_flag(flag)]
-    end
-end
-
-def get_filename
-    ARGV.first
-end
-
-if ARGV.empty?
-    puts 'CMDL - Component Description Language v0.1.0'
-    puts ''
-    puts '  Usage: cmdl [filename] [options]'
-    puts ''
-    puts '  Options:'
-
-    flag_width = $flags.keys.map do |flag, _|
-        [flag, flag_shorthand(flag)].join(', ').length
-    end.max
-
-    $flags.each do |flag, description|
-        flag_string = [flag_shorthand(flag), flag].join(', ')
-        puts "    #{flag_string.ljust(flag_width)}  #{description}"
-    end
-else
-    cmdl_file(get_filename, get_flags)
-end
+cmdl_sim.parse(ARGV) { |opts| synthesize opts }

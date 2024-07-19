@@ -322,7 +322,7 @@ class Network
         return unless deep_print
 
         @subnetworks.values.each_with_index do |network, index|
-            puts "#{pf}#{new_line(final)}"
+            puts "#{pf}#{new_line}"
 
             network.print(full_print, deep_print, pf, index == @subnetworks.size - 1)
         end
