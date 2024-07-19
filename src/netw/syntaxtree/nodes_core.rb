@@ -1,10 +1,9 @@
 # frozen_string_literal: true
 
-require_relative '../log/log'
+require_relative '../../core/log/log'
 require_relative '../scope'
 
 class ASTNode
-
     attr_accessor :value, :children, :parent
 
     def initialize(*children, value: nil)
@@ -76,6 +75,7 @@ class ASTNode
         }
 
         return colors[obj.class] if colors.key? obj.class
+
         colors[:default]
     end
 
@@ -87,7 +87,7 @@ class ASTNode
         color(@parent)
     end
 
-    def print(pf = "", final = true)
+    def print(pf = '', final = true)
         puts "#{pf}#{leaf(final).colorize(prefix_color)}#{to_s.colorize(node_color)}"
         puts "#{pf}#{base(final).colorize(prefix_color)}#{leaf(true)}#{@value.green}" if leaf?
 
@@ -95,17 +95,25 @@ class ASTNode
 
         nodes_to_print = children.select { |child| !child.nil? }
 
-        nodes_to_print.each.each_with_index do |child, index| 
+        nodes_to_print.each.each_with_index do |child, index|
             child.print(new_pf, index == nodes_to_print.size - 1)
         end
     end
 
     def leaf(final = false)
-        root? ? '' : (final ? '└─ ' : '├─ ')
+        if root?
+            ''
+        else
+            (final ? '└─ ' : '├─ ')
+        end
     end
 
     def base(final = false)
-        root? ? '' : (final ? '   ' : '│  ').colorize(prefix_color)
+        if root?
+            ''
+        else
+            (final ? '   ' : '│  ').colorize(prefix_color)
+        end
     end
 
     def evaluate(*)
@@ -116,7 +124,7 @@ end
 class LeafNode < ASTNode
     def debug_log(msg = nil)
         super(@value.to_s) if msg.nil?
-        super(msg) unless msg.nil?
+        super unless msg.nil?
     end
 
     def initialize(value)

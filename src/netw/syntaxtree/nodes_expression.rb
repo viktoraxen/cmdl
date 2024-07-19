@@ -2,7 +2,7 @@
 
 require_relative 'nodes_core'
 
-require_relative '../error/cmdl_assert'
+require_relative '../../core/error/cmdl_assert'
 require_relative '../types/constant'
 
 class BinaryExpressionNode < ASTNode

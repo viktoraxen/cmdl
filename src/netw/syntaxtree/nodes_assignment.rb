@@ -2,7 +2,7 @@
 
 require_relative 'nodes_core'
 
-require_relative '../error/cmdl_assert'
+require_relative '../../core/error/cmdl_assert'
 
 class AssignmentReceiverListNode < FlatListNode
 end
@@ -20,10 +20,10 @@ class AssignNode < ASTNode
         debug_log
 
         receiver_refs = receivers_node.evaluate(scope)
-        debug_log "Assignment Receivers:", receiver_refs
+        debug_log 'Assignment Receivers:', receiver_refs
 
         value_refs = expression_node.evaluate(scope)
-        debug_log "Assignment Values:", value_refs
+        debug_log 'Assignment Values:', value_refs
 
         assert_valid_assignment(scope, receiver_refs, value_refs)
 

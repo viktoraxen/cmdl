@@ -2,8 +2,6 @@
 
 # !/usr/bin/env ruby
 
-require 'logger'
-
 class Constraint
     attr_reader :name, :outputs, :inputs
 

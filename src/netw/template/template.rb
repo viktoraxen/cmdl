@@ -2,11 +2,11 @@
 
 require 'colorize'
 
-require_relative '../log/log'
+require_relative '../../core/log/log'
+require_relative '../../core/error/cmdl_assert'
 require_relative '../types/declarator'
 require_relative '../types/reference'
 require_relative '../types/subscript'
-require_relative '../error/cmdl_assert'
 
 require_relative 'signal'
 require_relative 'connection'

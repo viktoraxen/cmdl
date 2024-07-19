@@ -2,7 +2,7 @@
 
 # frozen_string_literal: true
 
-require_relative 'log/log'
+require_relative 'core/log/log'
 require_relative 'core/run_language'
 
 $flags = {

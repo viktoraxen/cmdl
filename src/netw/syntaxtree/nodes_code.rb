@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative '../error/cmdl_assert'
+require_relative '../../core/error/cmdl_assert'
 require_relative 'nodes_core'
 
 class CodeBlockNode < ASTNode

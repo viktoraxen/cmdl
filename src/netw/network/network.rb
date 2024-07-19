@@ -3,7 +3,7 @@
 require 'colorize'
 
 require_relative '../template/template'
-require_relative '../error/cmdl_assert'
+require_relative '../../core/error/cmdl_assert'
 require_relative 'constraint'
 
 class Network
@@ -29,6 +29,10 @@ class Network
         @wires[:output].map { |_, wires| wires }
     end
 
+    def user_wire(name)
+        @wires[:user][name]
+    end
+
     def synthesize_scope(scope)
         assert_valid_scope scope
 
@@ -40,19 +44,11 @@ class Network
             @wires[type] ||= {}
 
             signals.each do |name, signal|
-                wires = _wires_create(signal)
+                wire = _wire_create(signal)
 
-                if type == :constant
-                    value = signal.id.split('x').first.to_i
+                _wire_set_value(wire, signal.id.split('x').last.to_i) if type == :constant
 
-                    value_string = value.to_s(2).rjust(signal.width, '0')
-
-                    value_string.chars.reverse[...signal.width].each_with_index do |bit, i|
-                        wires[i].value = bit == '1'
-                    end
-                end
-
-                @wires[type][name] = wires
+                @wires[type][name] = wire
             end
         end
 
@@ -69,7 +65,15 @@ class Network
         self
     end
 
-    def _wires_create(signal)
+    def _wire_set_value(wire, value)
+        value_string = value.to_s(2).rjust(wire.size, '0')
+
+        value_string.chars.reverse[...wire.size].each_with_index do |bit, i|
+            wire[i].value = bit == '1'
+        end
+    end
+
+    def _wire_create(signal)
         (0...signal.width).map do |i|
             wire_name = "#{signal.id}[#{i}]"
             Wire.new(wire_name)

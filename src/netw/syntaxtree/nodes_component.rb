@@ -4,7 +4,7 @@ require_relative 'nodes_core'
 
 require_relative '../types/signature'
 
-require_relative '../error/cmdl_assert'
+require_relative '../../core/error/cmdl_assert'
 
 class ComponentNode < ScopeNode
     def signature_node

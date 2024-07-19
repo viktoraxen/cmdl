@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require_relative '../parser/cmdlparser'
-require_relative '../network/network'
-require_relative '../utils/print'
+require_relative '../netw/parser/cmdlparser'
+require_relative '../netw/network/network'
+require_relative 'utils/print'
 
 def cmdl_file(filename, flags)
     log_level = flags[:logging] ? Logger::DEBUG : Logger::ERROR

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative 'rdparse'
+require_relative '../../core/parser/rdparse'
 require_relative '../syntaxtree/syntaxtree'
 
 class CmdlParser < Parser
