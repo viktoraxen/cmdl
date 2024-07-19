@@ -29,6 +29,10 @@ class Network
         @wires[:output].map { |_, wires| wires }
     end
 
+    def user_wires
+        @wires[:user]
+    end
+
     def user_wire(name)
         @wires[:user][name]
     end

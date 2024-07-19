@@ -1,5 +1,5 @@
 require_relative 'synthesize'
-require_relative 'simulation'
+require_relative 'simulate'
 
 def run(opts)
     filename = opts[:filename]

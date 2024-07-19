@@ -1,15 +1,11 @@
-signal a: 4, b: 4, k: 1 <= 0: 4, 0: 4, 0
-signal result: 4, c <= Adder(a, b, k)
-signal res_m: 5 <= c ^ result
+signal result: 4, c <= Adder(9: 4, 15: 4, 0)
+signal fin_res: 5 <= c cat result
 
 component Adder(a: 4, b: 4, k) => s: 4, c
     signal d: 3
     signal h: 4
 
-    h.0 <= Xor(b.0, k)
-    h.1 <= Xor(b.1, k)
-    h.2 <= Xor(b.2, k)
-    h.3 <= Xor(b.3, k)
+    h <= Xor(b.3, k) cat Xor(b.2, k) cat Xor(b.1, k) cat Xor(b.0, k)
 
     s.0, d.0 <= OneBitAdder(a.0, h.0, k)
     s.1, d.1 <= OneBitAdder(a.1, h.1, d.0)

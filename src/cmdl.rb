@@ -3,7 +3,7 @@
 # frozen_string_literal: true
 
 require_relative 'core/log/log'
-require_relative 'core/synthesize'
+require_relative 'core/cmdl_run'
 
 require_relative 'core/utils/print'
 require_relative 'core/cli/cli'
@@ -19,7 +19,8 @@ cmdl_sim.add_flag('d', 'deep-network-print', 'Print the network with all compone
 cmdl_sim.add_flag('r', 'result-print',       'Print the final state of the network')
 cmdl_sim.add_flag('l', 'logging',            'Print the full log')
 cmdl_sim.add_flag('m', 'simulation',         'Open simulation interface')
+cmdl_sim.add_flag('c', 'clear',              'Clear terminal after each print')
 
 cmdl_sim.add_argument('filename', 'The CMDL file to synthesize.')
 
-cmdl_sim.parse(ARGV) { |opts| synthesize opts }
+cmdl_sim.parse(ARGV) { |opts| run(opts) }

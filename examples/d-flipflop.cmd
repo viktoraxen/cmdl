@@ -17,3 +17,6 @@ component DFlipFlop(l, clk) => q, q_
         x <= not(a and b and c)
     end
 end
+
+signal l, clk, q, q_
+q, q_ <= DFlipFlop(l, clk)
