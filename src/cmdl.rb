@@ -9,7 +9,7 @@ require_relative 'core/utils/print'
 require_relative 'core/cli/cli'
 
 cmdl_sim = CliApp.new('CMDL Simulator Interface', '0.1.0',
-                      'Simulator interface for CMDL.')
+                      "Simulator interface for CMDL. \nGenerates a dataflow network using a description of a logical \nnetwork and allows the user to interact with the network by\nchanging the values of the defined wires.")
 
 cmdl_sim.add_flag('s', 'syntax-tree-print',  'Print the syntax tree')
 cmdl_sim.add_flag('t', 'template-print',     'Print the template')
@@ -21,6 +21,11 @@ cmdl_sim.add_flag('l', 'logging',            'Print the full log')
 cmdl_sim.add_flag('m', 'simulation',         'Open simulation interface')
 cmdl_sim.add_flag('c', 'clear',              'Clear terminal after each print')
 
-cmdl_sim.add_argument('filename', 'The CMDL file to synthesize.')
+cmdl_sim.add_parameter('p', 'print_depth', Integer, 'Recursive depth limit for component printing')
 
-cmdl_sim.parse(ARGV) { |opts| run(opts) }
+cmdl_sim.add_argument('circuit', 'The file contatning the CMDL circuit to synthesize.')
+cmdl_sim.add_argument('simulation', 'The file containing the simulation to be ran.')
+
+cmdl_sim.parse(ARGV) do |opts|
+    run opts
+end

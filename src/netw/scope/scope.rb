@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require 'colorize'
-require_relative 'template/template'
+require_relative '../template/template'
 
 class Scope
     attr_reader :id, :template, :subscopes
@@ -62,7 +62,7 @@ class Scope
     end
 
     def root?
-        depth == 0
+        depth.zero?
     end
 
     def depth

@@ -5,7 +5,7 @@
 class Constraint
     attr_reader :name, :outputs, :inputs
 
-    def initialize(name, inputs, output)
+    def initialize(name, inputs, output, network = nil)
         @name = name
         @inputs = inputs
         @inputs.each { |input| input.add_connection(self) }
@@ -134,7 +134,7 @@ class FanGate < Constraint
 end
 
 class Wire
-    attr_accessor :name
+    attr_accessor :name, :network
     attr_reader :value, :constraint, :connections
 
     def initialize(name, value = nil)
@@ -146,6 +146,8 @@ class Wire
 
         # Constraints acting on this wire
         @constraint = nil
+
+        @network = nil
     end
 
     def ==(other)
@@ -170,6 +172,7 @@ class Wire
 
     def value=(value)
         @value = value
+        @network.notify_new_value(self)
         @connections.each(&:new_value)
     end
 

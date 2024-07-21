@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require_relative '../../core/log/log'
-require_relative '../scope'
+require_relative '../scope/scope'
 
 class ASTNode
     attr_accessor :value, :children, :parent

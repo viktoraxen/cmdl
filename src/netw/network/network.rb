@@ -16,9 +16,10 @@ class Network
     end
 
     def reset
-        @wires       = {}
-        @constraints = {}
-        @subnetworks = {}
+        @wires         = {}
+        @constraints   = {}
+        @subnetworks   = {}
+        @changed_wires = []
     end
 
     def inputs
@@ -35,6 +36,11 @@ class Network
 
     def user_wire(name)
         @wires[:user][name]
+    end
+
+    def notify_new_value(wire)
+        signal_name = wire.name.split('[').first
+        @changed_wires << signal_name
     end
 
     def synthesize_scope(scope)
@@ -66,7 +72,19 @@ class Network
             end
         end
 
+        _reset_changed_wires
+
         self
+    end
+
+    def _reset_changed_wires
+        @changed_wires = []
+        @subnetworks.each_value(&:_reset_changed_wires)
+    end
+
+    def wire_set_value(wire, value)
+        _reset_changed_wires
+        _wire_set_value(wire, value)
     end
 
     def _wire_set_value(wire, value)
@@ -80,7 +98,9 @@ class Network
     def _wire_create(signal)
         (0...signal.width).map do |i|
             wire_name = "#{signal.id}[#{i}]"
-            Wire.new(wire_name)
+            wire = Wire.new(wire_name)
+            wire.network = self
+            wire
         end
     end
 
@@ -289,46 +309,56 @@ class Network
         @parent.depth + 1
     end
 
-    def print(full_print = false, deep_print = false, pf = '', final = true)
-        puts "#{pf}#{root? ? '' : leaf(final)}#{@name.light_red}"
+    def print(full_print = false, deep_print = false, depth = 0, pf = '', final = true)
+        puts "#{pf}#{root? ? '' : leaf(final)}#{@name.red}"
         pf = root? ? '' : "#{pf}#{base(final)}"
 
         wires_to_print = @wires
         wires_to_print = wires_to_print.except(:internal, :constant) unless full_print
 
-        wires_to_print.each_with_index do |(type, wires), index|
+        wires_to_print.each_with_index do |(type, wires), type_index|
             next if wires.empty?
 
-            final_type = index == wires_to_print.size - 1 && (!deep_print || @subnetworks.empty?)
-            text = "#{type.capitalize} wires".light_blue
+            final_type = type_index == wires_to_print.size - 1 && (!deep_print || depth == 0 || @subnetworks.empty?)
+            text = "#{type.capitalize} wires".blue
 
             puts "#{pf}#{type_indent(final_type)}#{text}"
 
             width = wires.keys.map(&:length).max
 
-            wires.each_with_index do |(name, wire), index|
-                string = name.ljust(width).to_s.colorize(:light_green)
-                string = string.colorize(:light_yellow) if name[0] =~ /[0-9]/
+            wires.each_with_index do |(name, wire), name_index|
+                string = name.ljust(width).to_s.colorize(:green)
+                string = string.colorize(:yellow) if name[0] =~ /[0-9]/
 
                 binary_values = wire.reverse.map(&:value_b)
-                string += " : #{binary_values.join(' ')}"
+                binary_value_string = binary_values.join(' ')
+
+                # previous_wire = @previous_wires&.[](type)&.[](name)
+                # previous_binary_values = previous_wire&.reverse&.map(&:value_b) if previous_wire
+                # changed = !previous_binary_values.nil? && previous_binary_values != binary_values
+
+                binary_value_string = binary_value_string.red if @changed_wires.include? name
+
+                string += " : #{binary_value_string}"
 
                 decimal_value = binary_values.join.to_i(2) unless binary_values.map { |b| b == '<nil>' }.any?
                 string += " : #{decimal_value.to_s.cyan}" if decimal_value
 
-                final_sig = index == wires.size - 1
+                final_sig = name_index == wires.size - 1
                 indent = element_indent(final_sig, final_type)
 
                 puts "#{pf}#{indent}#{string}"
             end
         end
 
-        return unless deep_print
+        @changed_wires = []
+
+        return unless deep_print && depth > 0
 
         @subnetworks.values.each_with_index do |network, index|
             puts "#{pf}#{new_line}"
 
-            network.print(full_print, deep_print, pf, index == @subnetworks.size - 1)
+            network.print(full_print, deep_print, depth - 1, pf, index == @subnetworks.size - 1)
         end
     end
 

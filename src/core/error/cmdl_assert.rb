@@ -129,7 +129,7 @@ def assert_valid_declaration(scope, declarators)
     ids.each do |id|
         unless ids.count(id) == 1
             raise DeclarationDuplicateSignalIdentifierError,
-                  "Duplicate signal identifiers in declaration: #{id}"
+                  "Duplicate signal identifiers in scope #{scope.name}: #{id}"
         end
 
         if scope.template.signal_declared? id

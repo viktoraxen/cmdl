@@ -17,7 +17,7 @@ class CliArgument
         @name.to_sym
     end
 
-    def to_s
-        @name
+    def to_s(width = 0)
+        @name.ljust(width) + "  #{@description}"
     end
 end

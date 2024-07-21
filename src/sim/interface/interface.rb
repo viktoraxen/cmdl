@@ -11,8 +11,14 @@ class Interface
         @network.state
     end
 
+    def print(full, deep, depth)
+        @network.print(full, deep, depth)
+    end
+
     def change(name, value)
         wire = @network.user_wire name
-        @network._wire_set_value(wire, value)
+        return if wire.nil?
+
+        @network.wire_set_value(wire, value)
     end
 end

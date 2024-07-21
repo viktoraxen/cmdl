@@ -1,11 +1,12 @@
 # frozen_string_literal: true
 
-class CliFlag
-    attr_reader :short, :long, :description
+class CliParameter
+    attr_reader :short, :long, :description, :type
 
-    def initialize(short, long, description)
+    def initialize(short, long, type, description)
         @short       = short
         @long        = long
+        @type        = type
         @description = description
         freeze
     end
@@ -19,7 +20,7 @@ class CliFlag
     end
 
     def to_s(width = 0)
-        "-#{@short}, --#{@long}".ljust(width) + "  #{@description}"
+        "-#{@short}, --#{@long}".ljust(width) + "  (#{@type}) #{@description}"
     end
 
     def symbol
