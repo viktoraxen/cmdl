@@ -114,7 +114,7 @@ class Test
         @valid_exceptions = params[:valid_exceptions]
         @skip             = params[:skip]
         @stop_stage       = params[:stop_stage]
-        @expected_results = params[:expected_results]
+        @evaluations      = params[:evaluations]
 
         @tree       = nil
         @root_scope = nil
@@ -133,9 +133,9 @@ class Test
 
         begin
             parse
-            evaluate unless @stop_stage < 2
+            evaluate   unless @stop_stage < 2
             synthesize unless @stop_stage < 3
-            validate unless @stop_stage < 4
+            validate   unless @stop_stage < 4
         rescue *@valid_exceptions
             result = :success, :threw
         rescue StandardError => e
@@ -168,12 +168,17 @@ class Test
     end
 
     def validate
-        @results = @network.state
+        results = @network.state
+        interface = Interface.new(@network)
 
-        @expected_results.each do |name, value|
-            unless @results[name] == value
+        @evaluations.each do |type, (name, value)|
+            if type == :validation && results[name] != value
                 raise ValidationResultError,
-                      "Expected #{name} to be #{value}, but it was #{@results[name]}"
+                      "Expected #{name} to be #{value}, but it was #{results[name]}"
+            elsif type == :action
+                interface.change(name, value.to_i)
+                STDOUT.puts "Changed #{name} to #{value}"
+                results = @network.state
             end
         end
 
@@ -208,9 +213,6 @@ class Test
         params[:skip] = tags.include? 'skip'
         return params if params[:skip]
 
-        stop_tag = tags.find { |tag| tag =~ /^until.*$/ }
-        stop_stage = stop_tag&.scan(/until\s*:\s*([A-Za-z0-9_]+)/)&.flatten&.first
-
         stop_stage_map = {
             'parse'      => 1,
             'evaluate'   => 2,
@@ -218,32 +220,64 @@ class Test
             'validate'   => 4
         }
 
-        params[:stop_stage] = stop_stage_map[stop_stage] unless stop_stage.nil?
+        params[:evaluations] = []
 
-        fail_tag = tags.find { |tag| tag =~ /^fail.*$/ }
+        tags.each do |tag|
+            if tag =~ /^until.*$/
+                stop_stage = tag.scan(/until\s*:\s*([A-Za-z0-9_]+)/)&.flatten&.first
 
-        params[:should_finish] = fail_tag.nil?
-
-        params[:valid_exceptions] = _get_valid_exceptions(fail_tag) unless params[:should_finish]
-
-        params[:expected_results] = tags.map do |tag|
-            match = tag.strip.match(/^(?<name>\w+)\s*:\s*(?<value>b[x01]+|\d+)\s*:?\s*(?<width>\d+)?$/)
-
-            next if match.to_s == ''
-
-            name, value, width = match.captures
-
-            value = if value[0] == 'b'
-                        value[1..]
-                    else
-                        value.to_i.to_s(2).rjust(width.to_i, '0')
-                    end
-
-            [name, value]
+                params[:stop_stage] = stop_stage_map[stop_stage]
+            elsif tag =~ /^fail.*$/
+                params[:should_finish] = true
+                params[:valid_exceptions] = _get_valid_exceptions(tag)
+            else
+                params[:evaluations].append evaluation(tag)
+                # STDOUT.puts tag
+            end
         end
 
-        params[:stop_stage] = [params[:stop_stage], 3].min if params[:expected_results].empty?
+        params[:evaluations] = params[:evaluations]
+        # params[:evaluations].each { |e| STDOUT.puts e.join(' : ') }
+
+        # stop_tag = tags.find { |tag| tag =~ /^until.*$/ }
+        # stop_stage = stop_tag&.scan(/until\s*:\s*([A-Za-z0-9_]+)/)&.flatten&.first
+        #
+        #
+        # fail_tag = tags.find { |tag| tag =~ /^fail.*$/ }
+
+        # unless params[:should_finish]
+
+        # params[:expected_results] = tags.map do |tag|
+        # end
 
         params
+    end
+
+    def evaluation(tag)
+        validation_match = tag.strip.match(/^(?<name>\w+)\s*:\s*(?<value>b[x01]+|\d+)\s*:?\s*(?<width>\d+)?$/)
+        action_match = tag.strip.match(/^(?<name>\w+)\s*<=\s*(?<value>b[x01]+|\d+)\s*$/)
+
+        return validation(validation_match) unless validation_match.to_s == ''
+        return action(action_match) unless action_match.to_s == ''
+
+        nil
+    end
+
+    def validation(match)
+        name, value, width = match.captures
+
+        value = evaluate_value(value, width)
+
+        [:validation, [name, value]]
+    end
+
+    def action(match)
+        [:action, match.captures]
+    end
+
+    def evaluate_value(value, width)
+        return value[1..] if value[0] == 'b'
+
+        value.to_i.to_s(2).rjust(width.to_i, '0')
     end
 end
