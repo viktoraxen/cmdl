@@ -177,7 +177,6 @@ class Test
                       "Expected #{name} to be #{value}, but it was #{results[name]}"
             elsif type == :action
                 interface.change(name, value.to_i)
-                STDOUT.puts "Changed #{name} to #{value}"
                 results = @network.state
             end
         end
