@@ -1,16 +1,22 @@
 # frozen_string_literal: true
 
 class Declarator
-    attr_reader :id, :width, :type
+    attr_reader :id, :width
+    attr_accessor :type
 
-    def initialize(id, width, type: :user)
+    def initialize(id, width, type: nil)
         @id    = id
         @width = width
-        @type  = type
+        @type  = type || :user
     end
 
     def ==(other)
         @id == other.id && @width == other.width
+    end
+
+    def type=(value)
+        @type = value
+        self
     end
 
     def inspect

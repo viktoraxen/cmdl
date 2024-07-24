@@ -1,4 +1,5 @@
-signal a: 8, b: 8, k: 1 <= 0: 8, 0: 8, 0
+signal a: 8, b: 8, k: 1
+k <= 0
 signal result: 8, c <= Adder(a, b, k)
 signal res_m: 9 <= c ^ result
 

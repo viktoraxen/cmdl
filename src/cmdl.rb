@@ -21,7 +21,7 @@ cmdl_sim.add_flag('l', 'logging',            'Print the full log')
 cmdl_sim.add_flag('m', 'simulation',         'Open simulation interface')
 cmdl_sim.add_flag('c', 'clear',              'Clear terminal after each print')
 
-cmdl_sim.add_parameter('p', 'print_depth', Integer, 'Recursive depth limit for component printing')
+cmdl_sim.add_parameter('p', 'print-depth', Integer, 'Recursive depth limit for component printing')
 
 cmdl_sim.add_argument('circuit', 'The file contatning the CMDL circuit to synthesize.')
 cmdl_sim.add_argument('simulation', 'The file containing the simulation to be ran.')

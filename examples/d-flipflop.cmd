@@ -1,22 +1,13 @@
-component DFlipFlop(l, clk) => q, q_
-    signal a, b, c, d, e, f
+component DFlipFlop(d, clk) => q, q_
+    signal a, b
 
-    a <= Nand(d, b)
-    b <= Nand(clk, a)
-    c <= Nand3(b, clk, d)
-    d <= Nand(l, c)
+    a <= not(d and clk)
+    b <= not(not d and clk)
 
-    q <= Nand(b, q_)
-    q_ <= Nand(c, q)
-
-    component Nand(a, b) => x
-        x <= not(a and b)
-    end
-
-    component Nand3(a, b, c) => x
-        x <= not(a and b and c)
-    end
+    q <= not(a and q_)
+    q_ <= not(b and q)
 end
 
-signal l, clk, q, q_
-q, q_ <= DFlipFlop(l, clk)
+signal d, clk
+clk <= 0
+signal q, q_ <= DFlipFlop(d, clk)

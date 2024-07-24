@@ -2,7 +2,7 @@
 
 require 'colorize'
 
-require_relative '../src/core/run_language'
+require_relative '../src/core/cmdl_run'
 
 class TestFile
     @@section_pattern = /<<\s+(.*?)\n((?:<.*?\n)*)(.*?)(?=<<\s|\z)/m
@@ -206,6 +206,7 @@ class Test
         tags = tags.lines.map(&:strip).select { |line| line.start_with?('<') }.map { |line| line[1..].strip }
 
         params[:skip] = tags.include? 'skip'
+        return params if params[:skip]
 
         stop_tag = tags.find { |tag| tag =~ /^until.*$/ }
         stop_stage = stop_tag&.scan(/until\s*:\s*([A-Za-z0-9_]+)/)&.flatten&.first

@@ -15,6 +15,7 @@ def synthesize(filename, opts)
     tree   = parser.parse(string)
 
     root_scope = tree.evaluate
+    root_scope.print if opts[:template_print]
     network    = root_scope.synthesize
     result     = network.state
 

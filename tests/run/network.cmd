@@ -1,8 +1,8 @@
 << Cyclic graph
 signal a, b, c
 a <= b
-c <= a
 b <= c
+c <= a
 
 << Component duplicate input
 < r: 4: 4

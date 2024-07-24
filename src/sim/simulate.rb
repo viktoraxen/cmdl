@@ -11,7 +11,7 @@ end
 def print_state(interface, opts)
     full_nw_print = opts[:full_network_print]
     deep_nw_print = opts[:deep_network_print]
-    nw_print_depth = opts[:print_depth]
+    nw_print_depth = opts[:print_depth] || 999
     clear = opts[:clear]
 
     system 'clear' if clear
@@ -51,7 +51,6 @@ def simulation_cli(interface, opts)
         end
 
         id, value = input.split('<=').map(&:strip)
-        puts "changing #{id} to #{value}"
         interface.change(id, value.to_i)
     end
 end
@@ -70,7 +69,7 @@ end
 
 def get_input
     print '> '
-    $stdin.gets.chomp
+    $stdin.gets.strip
 end
 
 def valid_input(str)

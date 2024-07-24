@@ -1,12 +1,14 @@
 # frozen_string_literal: true
 
 class Signature
-    attr_reader :id, :inputs, :outputs
+    attr_reader :id, :outputs, :inputs
+    attr_accessor :sync
 
     def initialize(id, inputs, outputs)
         @id      = id
         @inputs  = inputs
         @outputs = outputs
+        @sync    = nil
     end
 
     def ==(other)

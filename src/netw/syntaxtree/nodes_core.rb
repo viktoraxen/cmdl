@@ -166,4 +166,54 @@ class FlatListNode < ASTNode
 end
 
 class ScopeNode < ASTNode
+    def signature_node
+        @children[0]
+    end
+
+    def statements_node
+        @children[1]
+    end
+
+    def evaluate(scope, *)
+        debug_log
+
+        signature = signature_node.evaluate(scope)
+
+        scope = scope.find_scope(signature.id)
+
+        statements_node.evaluate(scope)
+
+        scope
+    end
+end
+
+class SignatureNode < ASTNode
+    def id_node
+        @children[0]
+    end
+
+    def inputs_node
+        @children[1]
+    end
+
+    def outputs_node
+        @children[2]
+    end
+
+    def evaluate(*)
+        debug_log
+
+        id = id_node.evaluate
+        debug_log 'Id:', id
+
+        inputs = inputs_node.evaluate
+        debug_log 'Inputs:', inputs
+
+        outputs = outputs_node.evaluate
+        debug_log 'Outputs:', outputs
+
+        assert_valid_signature id, inputs, outputs
+
+        Signature.new(id, inputs, outputs)
+    end
 end

@@ -43,31 +43,31 @@ end
 # Component
 #
 
-def assert_valid_component_signature(comp_id, input_refs, output_refs)
+def assert_valid_signature(sig_id, input_refs, output_refs)
     invalid_inputs = _get_invalid_widths(input_refs)
     invalid_outputs = _get_invalid_widths(output_refs)
 
-    unless comp_id[0] == comp_id[0].upcase
-        raise ComponentInvalidIdentifierError,
-              "Invalid component identifier: #{comp_id}. Component identifiers must be capitalized."
+    unless sig_id[0] == sig_id[0].upcase
+        raise SignatureInvalidIdentifierError,
+              "Invalid component identifier: #{sig_id}. Component identifiers must be capitalized."
     end
 
     unless invalid_inputs.empty?
-        raise ComponentInputInvalidWidthError,
-              "Invalid signal widths for inputs of component #{comp_id}: #{_info_string(invalid_inputs)}"
+        raise SignatureInputInvalidWidthError,
+              "Invalid signal widths for inputs of component #{sig_id}: #{_info_string(invalid_inputs)}"
     end
 
     unless invalid_outputs.empty?
-        raise ComponentOutputInvalidWidthError,
-              "Invalid signal widths for outputs of component #{comp_id}: #{_info_string(invalid_outputs)}"
+        raise SignatureOutputInvalidWidthError,
+              "Invalid signal widths for outputs of component #{sig_id}: #{_info_string(invalid_outputs)}"
     end
 
     ids = (input_refs + output_refs).map(&:id)
 
     ids.each do |id|
         unless ids.count(id) == 1
-            raise ComponentDuplicateSignatureSignalError,
-                  "Duplicate signal identifiers for component #{comp_id}: #{id}"
+            raise SignatureDuplicateSignalError,
+                  "Duplicate signal identifiers for component #{sig_id}: #{id}"
         end
     end
 end
@@ -129,7 +129,7 @@ def assert_valid_declaration(scope, declarators)
     ids.each do |id|
         unless ids.count(id) == 1
             raise DeclarationDuplicateSignalIdentifierError,
-                  "Duplicate signal identifiers in scope #{scope.name}: #{id}"
+                  "Duplicate signal identifiers in scope #{scope.id}: #{id}"
         end
 
         if scope.template.signal_declared? id
@@ -153,15 +153,15 @@ def assert_valid_component_expression(scope, comp_id, input_refs)
 
     assert_signals_declared(scope, input_refs)
 
-    component_num_inputs = component_scope.template.num_inputs
+    component_inputs = component_scope.template.inputs.map(&:first)
+
+    component_num_inputs = component_inputs.size
     num_inputs = input_refs.size
 
     unless num_inputs == component_num_inputs
         raise ExpressionComponentInputNumberMismatchError,
               "Given number of inputs (#{num_inputs}) does not match component #{comp_id} input width (#{component_num_inputs})!"
     end
-
-    component_inputs = component_scope.template.inputs.map(&:first)
 
     input_refs.zip(component_inputs) do |input, component_input|
         input_width = scope.template.signal_reference_width(input)
@@ -341,6 +341,19 @@ def assert_valid_span_values(start, stop)
        (start.negative? && stop.negative? && start > stop))
         raise SpanInvalidRangeError,
               "Start index must be before end index: #{start}..#{stop}."
+    end
+end
+
+#
+# Synchronized
+#
+
+def assert_valid_synchronized(signature, sync)
+    signature.inputs.each do |input|
+        next unless sync == input
+
+        raise SignatureDuplicateSignalError,
+              "Duplicate signal identifiers for component #{signature.id}: #{sync}"
     end
 end
 

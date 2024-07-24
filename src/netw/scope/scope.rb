@@ -17,6 +17,7 @@ class Scope
     def synthesize
         network = Network.new(full_name)
         network.synthesize_scope(self)
+        network.evaluate_constants
     end
 
     def add_subscope(scope)

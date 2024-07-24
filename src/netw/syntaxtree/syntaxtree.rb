@@ -18,9 +18,11 @@ class SyntaxTree
     def scope_structure(node)
         assert_valid_scope_node(node)
 
-        signature = node.children.find { |child| child.is_a?(ComponentSignatureNode) }&.evaluate
+        signature = node.children.find { |child| child.is_a?(SignatureNode) }&.evaluate
 
         scope = Scope.new signature&.id
+
+        scope.template.make_synchronized if node.is_a? SynchronizedNode
 
         signature&.inputs&.each do |input|
             scope.template.declare(input)
@@ -30,9 +32,13 @@ class SyntaxTree
             scope.template.declare(output)
         end
 
+        sync = signature&.sync
+
+        scope.template.declare(sync) unless sync.nil?
+
         code_node = node.children.find { |child| child.is_a?(CodeBlockNode) }
 
-        code_node.component_statement_nodes.each do |child|
+        code_node.scope_nodes.each do |child|
             subscope_structure = scope_structure(child)
 
             assert_valid_subscope(scope, subscope_structure)

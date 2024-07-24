@@ -12,27 +12,6 @@ end
 class AssignmentWidthMismatchError < StandardError
 end
 
-class ComponentDuplicateInputError < StandardError
-end
-
-class ComponentDuplicateSignatureSignalError < StandardError
-end
-
-class ComponentInputInvalidWidthError < StandardError
-end
-
-class ComponentInputUndeclaredSignalError < StandardError
-end
-
-class ComponentInvalidIdentifierError < StandardError
-end
-
-class ComponentOutputInvalidWidthError < StandardError
-end
-
-class ComponentNotFoundError < StandardError
-end
-
 class ConstraintNullError < StandardError
 end
 
@@ -126,6 +105,18 @@ end
 class SubscriptUndeclaredSignalError < StandardError
 end
 
+class SignatureDuplicateSignalError < StandardError
+end
+
+class SignatureInputInvalidWidthError < StandardError
+end
+
+class SignatureInvalidIdentifierError < StandardError
+end
+
+class SignatureOutputInvalidWidthError < StandardError
+end
+
 class TemplateUndeclaredSignalsError < StandardError
 end
 
@@ -133,6 +124,9 @@ class UndeclaredSignalError < StandardError
 end
 
 class UnknownComponentError < StandardError
+end
+
+class UnknownSynchronizedError < StandardError
 end
 
 class UnreachableCodeError < StandardError

@@ -56,7 +56,7 @@ class DeclaratorSubscriptNode < ASTNode
         @children[1]
     end
 
-    def evaluate(*)
+    def evaluate(_, type = nil, *)
         debug_log
 
         id = id_node.evaluate
@@ -65,7 +65,7 @@ class DeclaratorSubscriptNode < ASTNode
         width = width_node.evaluate
         debug_log 'Width:', width
 
-        Declarator.new(id, width)
+        Declarator.new(id, width, type: type)
     end
 end
 
@@ -74,12 +74,12 @@ class DeclaratorNode < ASTNode
         @children[0]
     end
 
-    def evaluate(*)
+    def evaluate(_, type = nil, *)
         debug_log
 
         id = id_node.evaluate
         debug_log 'Id:', id
 
-        Declarator.new(id, 1)
+        Declarator.new(id, 1, type: type)
     end
 end

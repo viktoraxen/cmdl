@@ -25,17 +25,17 @@ component Xor(a, b) =>
 end
 
 << Duplicate inputs
-< fail: ComponentDuplicateSignatureSignalError
+< fail: SignatureDuplicateSignalError
 component Xor(a, a) => c
 end
 
 << Duplicate outputs
-< fail: ComponentDuplicateSignatureSignalError
+< fail: SignatureDuplicateSignalError
 component Xor(a, c) => d, d
 end
 
 << Inputs/outputs naming collision
-< fail: ComponentDuplicateSignatureSignalError
+< fail: SignatureDuplicateSignalError
 component Xor(a, b) => a
 end
 
@@ -58,7 +58,7 @@ component Xor(a, b) => c
 end
 
 << Invalid identifier
-< fail: ComponentInvalidIdentifierError
+< fail: SignatureInvalidIdentifierError
 component xor(a, b) => c
 end
 
@@ -82,13 +82,13 @@ end
 
 << Inputs with zero width
 < until: evaluate
-< fail: ComponentInputInvalidWidthError
+< fail: SignatureInputInvalidWidthError
 component Xor(a: 2, b: 0) => c
 end
 
 << Inputs with negative width
 < until: evaluate
-< fail: ComponentInputInvalidWidthError
+< fail: SignatureInputInvalidWidthError
 component Xor(a: 2, b: -1) => c
 end
 
@@ -98,13 +98,12 @@ end
 
 << Outputs with zero width
 < until: evaluate
-< fail: ComponentOutputInvalidWidthError
+< fail: SignatureOutputInvalidWidthError
 component Xor(a, b) => c: 4, d: 0
 end
 
 << Outputs with negative width
 < until: evaluate
-< fail: ComponentOutputInvalidWidthError
+< fail: SignatureOutputInvalidWidthError
 component Xor(a, b) => c: 4, d: -1
 end
-

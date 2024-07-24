@@ -184,3 +184,15 @@ signal c: 2 <= 3: 2
 signal d <= Nand(
     Xor(a.1, b) or Nand(c.-1, b or a.0), 
     a.2 or Xor(Nand(b, c.0), b))
+
+<< Component multiple output as multiple input
+< a: 1
+component Xor(a, b) => x, y
+    x <= 1
+    y <= 1
+end
+
+component And(a, b) => x
+    x <= a and b
+end
+signal a <= And(Xor(1, 0))

@@ -12,12 +12,13 @@ require_relative 'signal'
 require_relative 'connection'
 
 class Template
-    attr_reader :connections, :signals, :scope
+    attr_reader :connections, :signals, :scope, :synchronized
 
     def initialize(scope)
-        @connections = {}
-        @signals     = {}
-        @scope       = scope
+        @connections  = {}
+        @signals      = {}
+        @scope        = scope
+        @synchronized = false
     end
 
     def undeclared_signals
@@ -36,12 +37,6 @@ class Template
         @scope.find_scope(id).template
     end
 
-    def num_inputs
-        return 0 if @signals[:input].nil?
-
-        @signals[:input].size
-    end
-
     def num_outputs
         return 1 if @signals[:output].nil?
 
@@ -51,6 +46,8 @@ class Template
     def inputs
         return [] if @signals[:input].nil?
 
+        return @signals[:sync].merge(@signals[:input]) if @signals[:sync]
+
         @signals[:input]
     end
 
@@ -58,6 +55,20 @@ class Template
         return [] if @signals[:output].nil?
 
         @signals[:output]
+    end
+
+    def sync
+        nil unless @synchronized
+
+        @signals[:sync]
+    end
+
+    def make_synchronized
+        @synchronized = true
+    end
+
+    def synchronized?
+        @synchronized
     end
 
     #

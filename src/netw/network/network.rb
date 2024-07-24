@@ -4,7 +4,8 @@ require 'colorize'
 
 require_relative '../template/template'
 require_relative '../../core/error/cmdl_assert'
-require_relative 'constraint'
+require_relative 'constraint/constraint'
+require_relative 'wire'
 
 class Network
     attr_accessor :parent
@@ -19,6 +20,7 @@ class Network
         @wires         = {}
         @constraints   = {}
         @subnetworks   = {}
+        @constants     = {}
         @changed_wires = []
     end
 
@@ -28,6 +30,10 @@ class Network
 
     def outputs
         @wires[:output].map { |_, wires| wires }
+    end
+
+    def sync
+        @wires[:sync]&.values&.first&.first
     end
 
     def user_wires
@@ -56,7 +62,7 @@ class Network
             signals.each do |name, signal|
                 wire = _wire_create(signal)
 
-                _wire_set_value(wire, signal.id.split('x').last.to_i) if type == :constant
+                @constants[name] = signal.id.split('x').last.to_i if type == :constant
 
                 @wires[type][name] = wire
             end
@@ -73,6 +79,17 @@ class Network
         end
 
         _reset_changed_wires
+
+        self
+    end
+
+    def evaluate_constants
+        @constants.each do |name, value|
+            wire = _get_wires_by_name(name)
+            _wire_set_value(wire, value)
+        end
+
+        @subnetworks.each_value(&:evaluate_constants)
 
         self
     end
@@ -122,28 +139,55 @@ class Network
             _get_wires_by_reference(reference)
         end
 
+        if component_scope.template.synchronized?
+            _connect_input_wires_synchronized(network, input_wires)
+        else
+            _connect_input_wires(network, input_wires)
+        end
+
         output_wires = connection.outputs.map do |reference|
             _get_wires_by_reference(reference)
         end
 
+        _connect_output_wires(network, output_wires)
+
+        _add_subnetwork(network_name, network)
+    end
+
+    def _connect_input_wires(network, input_wires)
         network_inputs = network.inputs
-        network_outputs = network.outputs
 
         input_wires.zip(network_inputs).each do |input, network_input|
             input.zip(network_input).each do |input_wire, network_input_wire|
-                # TODO: Add to constratints list
+                # TODO: Add to constraints list
                 AssignGate.new('Connection input', input_wire, network_input_wire)
             end
         end
+    end
+
+    def _connect_input_wires_synchronized(network, input_wires)
+        network_inputs = network.inputs
+        sync_wire = network.sync
+
+        AssignGate.new('Synchronized input', input_wires.first.first, sync_wire)
+
+        input_wires[1..].zip(network_inputs).each do |input, network_input|
+            input.zip(network_input).each do |input_wire, network_input_wire|
+                # TODO: Add to constraints list
+                SynchronizedAssignGate.new('Connection input', sync_wire, input_wire, network_input_wire)
+            end
+        end
+    end
+
+    def _connect_output_wires(network, output_wires)
+        network_outputs = network.outputs
 
         output_wires.zip(network_outputs).each do |output, network_output|
             output.zip(network_output).each do |output_wire, network_output_wire|
-                # TODO: Add to constratints list
+                # TODO: Add to constraints list
                 AssignGate.new('Connection output', network_output_wire, output_wire)
             end
         end
-
-        _add_subnetwork(network_name, network)
     end
 
     def _add_subnetwork(name, network)
@@ -332,10 +376,6 @@ class Network
 
                 binary_values = wire.reverse.map(&:value_b)
                 binary_value_string = binary_values.join(' ')
-
-                # previous_wire = @previous_wires&.[](type)&.[](name)
-                # previous_binary_values = previous_wire&.reverse&.map(&:value_b) if previous_wire
-                # changed = !previous_binary_values.nil? && previous_binary_values != binary_values
 
                 binary_value_string = binary_value_string.red if @changed_wires.include? name
 

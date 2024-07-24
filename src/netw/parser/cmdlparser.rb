@@ -44,9 +44,10 @@ class CmdlParser < Parser
             end
 
             rule :statement do
-                match(:component)   { |a| a }
-                match(:declaration) { |a| a }
-                match(:assignment)  { |a| a }
+                match(:component)    { |a| a }
+                match(:synchronized) { |a| a }
+                match(:declaration)  { |a| a }
+                match(:assignment)   { |a| a }
             end
 
             #
@@ -83,6 +84,46 @@ class CmdlParser < Parser
             rule :component_output do
                 match(:identifier, ':', :number) { |id, _, width| ComponentOutputSubscriptNode.new(id, width) }
                 match(:identifier)               { |id|           ComponentOutputNode.new(id)                 }
+            end
+
+            #
+            # Synchronized
+            #
+
+            rule :synchronized do
+                match('synchronized', :synchronized_signature, :code_block, 'end') do |_, signature, statements, _|
+                    SynchronizedNode.new(signature, statements)
+                end
+            end
+
+            rule :synchronized_signature do
+                match(:identifier, '(', :sync_identifier, ',', :synchronized_inputs, ')', '=>', :synchronized_outputs) do |id, _, clk, _, inputs, _, _, outputs|
+                    SynchronizedSignatureNode.new(id, clk, inputs, outputs)
+                end
+            end
+
+            rule :sync_identifier do
+                match(:identifier) { |id| SynchronizedSyncNode.new(id) }
+            end
+
+            rule :synchronized_inputs do
+                match(:synchronized_inputs, ',', :synchronized_input) { |inputs, _, input| inputs.add_child(input) }
+                match(:synchronized_input) { |input| SynchronizedInputListNode.new(input) }
+            end
+
+            rule :synchronized_input do
+                match(:identifier, ':', :number) { |id, _, width| SynchronizedInputSubscriptNode.new(id, width) }
+                match(:identifier)               { |id| SynchronizedInputNode.new(id) }
+            end
+
+            rule :synchronized_outputs do
+                match(:synchronized_outputs, ',', :synchronized_output) { |outputs, _, output| outputs.add_child(output) }
+                match(:synchronized_output) { |output| SynchronizedOutputListNode.new(output) }
+            end
+
+            rule :synchronized_output do
+                match(:identifier, ':', :number) { |id, _, width| SynchronizedOutputSubscriptNode.new(id, width) }
+                match(:identifier)               { |id| SynchronizedOutputNode.new(id) }
             end
 
             #
