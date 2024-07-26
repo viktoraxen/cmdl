@@ -1,7 +1,12 @@
-<< Definition
-< until: parse
+<< DFlip
+< q: bx
+< clk <= 1
+< q: b0
 synchronized Dflip(clk, d) => q
+    q <= d
 end
+signal clk, d <= 0, 0
+signal q <= Dflip(clk, d)
 
 << Missing inputs
 < until: parse
@@ -86,7 +91,14 @@ synchronized DFlip(clk, a, b) => c: 4, d: -1
 end
 
 << Inputs with width
-synchronized DFlip(clk, a: 2, b: 5) => c
+< a: 2: 2
+< c: bxx
+< clk <= 1
+< c: 2: 2
+synchronized DFlip(clk, a: 2, b: 5) => c: 2
+    c <= a
 end
-signal clk, a: 2, b: 5, c
+signal clk, a: 2, b: 5, c: 2
+clk <= 0
+a <= 2: 2
 c <= DFlip(clk, a, b)
