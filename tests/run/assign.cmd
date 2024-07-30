@@ -185,7 +185,7 @@ signal a: 2, b, c, d
 signal a, b, c
 a, b, c <= 1 and 0, a or c, 0 or 1
 
-<< Multiple component expression
+<< Multiple component expressions
 < a: 1
 < b: 1
 < c: 1

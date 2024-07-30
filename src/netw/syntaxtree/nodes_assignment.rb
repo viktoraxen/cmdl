@@ -40,7 +40,7 @@ class AssignmentReceiverSubscriptNode < ASTNode
         @children[1]
     end
 
-    def evaluate(scope, *)
+    def evaluate(*)
         debug_log
 
         id = id_node.evaluate
@@ -49,7 +49,7 @@ class AssignmentReceiverSubscriptNode < ASTNode
         subscript = subscript_node.evaluate
         debug_log 'Subscript:', subscript
 
-        scope.template.reference(id, subscript)
+        Reference.new(id, subscript)
     end
 end
 
@@ -58,12 +58,12 @@ class AssignmentReceiverNode < ASTNode
         @children[0]
     end
 
-    def evaluate(scope, *)
+    def evaluate(*)
         debug_log
 
         id = id_node.evaluate
         debug_log 'Id:', id
 
-        scope.template.reference(id)
+        Reference.new(id)
     end
 end

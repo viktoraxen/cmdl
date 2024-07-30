@@ -59,7 +59,7 @@ end
 
 << Invalid identifier
 < fail: SignatureInvalidIdentifierError
-component xor(a, b) => c
+component xoc(a, b) => c
 end
 
 << Duplicate identifier

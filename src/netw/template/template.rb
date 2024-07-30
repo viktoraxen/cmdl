@@ -72,20 +72,16 @@ class Template
     end
 
     #
-    # References
-    #
-
-    def reference(id, subscript = nil)
-        [_signal_reference(id, subscript)]
-    end
-
-    def reference_add_subscript(ref, subscript)
-        _signal_reference(ref.id, subscript)
-    end
-
-    #
     # Signals
     #
+
+    def signal(ref)
+        return signal(ref.id) if ref.is_a? Reference
+
+        @signals.each_value { |signals| return signals[ref] if signals.key? ref }
+
+        nil
+    end
 
     def declare(declarator)
         id    = declarator.id
@@ -94,7 +90,7 @@ class Template
 
         _signal_add(_signal_create(id, width, declared: true), type)
 
-        _signal_reference(id)
+        Reference.new id
     end
 
     def assign(receiver_refs, value_refs)
@@ -115,13 +111,11 @@ class Template
 
         _signal_add_constant _signal_create(signal_name, signal_width, declared: true)
 
-        [_signal_reference(signal_name)]
+        [Reference.new(signal_name)]
     end
 
     def _signal_create(id, width, declared: false)
-        return _signal_find(id) if _signal_exists? id
-
-        SignalTemplate.new(id, width, declared)
+        signal(id) || SignalTemplate.new(id, width, declared)
     end
 
     def _signal_add(signal, type = :user)
@@ -190,10 +184,6 @@ class Template
         return unless _signal_exists? id
 
         _signal_find(id).width
-    end
-
-    def _signal_reference(id, subscript = nil)
-        Reference.new(id, subscript)
     end
 
     def _signal_exists?(id)
@@ -279,7 +269,7 @@ class Template
     end
 
     def _connection_update_width(connection)
-        return if _connection_is_composite? connection
+        return if connection.composite
 
         input_widths = connection.inputs.map do |input_ref|
             _signal_subscript_width(input_ref.id, input_ref.subscript)
@@ -300,10 +290,6 @@ class Template
     def _connection_add_output(connection, output_ref)
         connection.outputs << output_ref
         _signal_set_constraint output_ref.id, connection
-    end
-
-    def _connection_is_composite?(connection)
-        connection.composite
     end
 
     def _connection_exists?(operation, inputs, outputs)
@@ -329,7 +315,7 @@ class Template
             # Add output signal to signals
             _signal_add_internal output_signal
 
-            output_ref = _signal_reference(output_name)
+            output_ref = Reference.new output_name
 
             # Create connection
             connection = _connection_create(operation, [input_ref], [output_ref])
@@ -340,6 +326,9 @@ class Template
     end
 
     def add_binary(operation, lh_refs, rh_refs)
+        lh_refs = [lh_refs] unless lh_refs.is_a? Array
+        rh_refs = [rh_refs] unless rh_refs.is_a? Array
+
         lh_refs.zip(rh_refs).map do |lh_ref, rh_ref|
             # Create output signal
             output_name = _gate_output_name(operation, lh_ref, rh_ref)
@@ -350,7 +339,7 @@ class Template
             # Add output signal to signals
             _signal_add_internal output_signal
 
-            output_ref = _signal_reference(output_name)
+            output_ref = Reference.new output_name
 
             # Create connection
             connection = _connection_create(operation, [lh_ref, rh_ref], [output_ref])
@@ -371,7 +360,7 @@ class Template
 
             _signal_add_internal output_signal
 
-            _signal_reference(output[:name])
+            Reference.new output[:name]
         end
 
         # Create connection
@@ -390,7 +379,7 @@ class Template
         # Add output signal to signals
         _signal_add_internal output_signal
 
-        output_ref = _signal_reference(output_name)
+        output_ref = Reference.new output_name
 
         # Create connection
         connection = _connection_create(operation, input_refs, [output_ref])
@@ -405,8 +394,11 @@ class Template
         case operation
         when 'not'
             operand = input_names.first
-            operand = "(#{operand})" if operand.count('^|&') > 0
+            operand = "(#{operand})" if operand.count('=\^|&') > 0
             return "!#{operand}"
+        when 'eq'
+            operands = input_names.map { |n| n.count('\^|&') > 0 ? "(#{n})" : n }
+            return operands.join('=')
         when 'cat'
             operands = input_names.map { |n| n.count('|&') > 0 ? "(#{n})" : n }
             return operands.join('^')
@@ -421,6 +413,8 @@ class Template
     end
 
     def _gate_output_width(operation, *input_refs)
+        return 1 if ['eq'].include? operation
+
         widths = input_refs.map { |ref| _signal_subscript_width(ref) }
 
         return widths.first if ['not', 'and', 'or'].include? operation
@@ -470,7 +464,6 @@ class Template
             signals.each_with_index do |(name, signal), index|
                 string = name.ljust(width).colorize(:light_green)
                 string = string.colorize(:light_yellow) if signal.id[0] =~ /[0-9]/
-                string = string.colorize(:light_red) unless signal_declared? name
 
                 final_sig = index == signals.size - 1
                 indent = element_indent(final_sig, final_type)

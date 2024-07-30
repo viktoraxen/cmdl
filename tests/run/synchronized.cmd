@@ -42,7 +42,7 @@ end
 
 << Invalid identifier
 < fail: SignatureInvalidIdentifierError
-component xor(a, b) => c
+component bor(a, b) => c
 end
 
 << Duplicate identifier

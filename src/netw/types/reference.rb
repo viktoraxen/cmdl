@@ -4,6 +4,7 @@ require_relative 'subscript'
 
 class Reference
     attr_reader :id
+    attr_accessor :subscript
 
     def initialize(id, subscript = nil)
         @id = id
@@ -13,12 +14,6 @@ class Reference
 
     def ==(other)
         @id == other.id && @subscript == other.subscript
-    end
-
-    def subscript
-        return SubscriptRange.new if @subscript.nil?
-
-        @subscript
     end
 
     def name

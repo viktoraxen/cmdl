@@ -304,8 +304,12 @@ class Network
         ['cat'].include? connection.operation
     end
 
+    # def _gate_is_equals?(connection)
+    #     ['eq'].include? connection.operation
+    # end
+
     def _connection_is_gate?(connection)
-        _gate_is_unary?(connection) || _gate_is_binary?(connection) || _gate_is_merge?(connection)
+        _gate_is_unary?(connection) || _gate_is_binary?(connection) || _gate_is_merge?(connection) # || _gate_is_equals?(connection)
     end
 
     def _get_wires_by_reference(reference)

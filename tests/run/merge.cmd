@@ -32,7 +32,7 @@ signal c <= 0
 signal a: 2
 signal b <= 1
 signal c <= 0
-a <= b ^ c
+a <= b + c
 
 << Merge shorthand (On declare)
 < a: b10
@@ -40,13 +40,13 @@ a <= b ^ c
 < c: b0
 signal b <= 1
 signal c <= 0
-signal a: 2 <= b ^ c
+signal a: 2 <= b + c
 
 << Merge shorthand (Late declare)
 < a: b10
 < b: b1
 < c: b0
-signal a: 2 <= b ^ c
+signal a: 2 <= b + c
 signal b <= 1
 signal c <= 0
 

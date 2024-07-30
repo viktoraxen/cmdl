@@ -5,33 +5,36 @@ require 'colorize'
 require_relative '../src/core/cmdl_run'
 
 class TestFile
-    @@section_pattern = /<<\s+(.*?)\n((?:<.*?\n)*)(.*?)(?=<<\s|\z)/m
-    @@indent = ' ' * 4
-    @@colors = {
-        skipped: :gray,
-        failure: :red,
-        success: :green,
-        warning: :yellow
-    }
-    @@symbols = {
-        skipped:  '',
-        threw:    '',
-        finished: '',
-        warning:  ''
-    }
-    @@stop_stage_symbols = {
-        0 => '',
-        1 => '󰹩',
-        2 => '',
-        3 => '',
-        4 => ''
-    }
+    attr_reader :total_time, :parsed, :evaluated, :synthesized, :simulated, :skipped, :warnings, :passed, :failed, :total
 
-    attr_reader :total_time
+    def TestFile.stop_stage_symbols
+        {
+            0 => '',
+            1 => '󰹩',
+            2 => '',
+            3 => '',
+            4 => ''
+        }
+    end
 
     def initialize(filepath, tests_dir = File.join(File.dirname(__FILE__), 'run'))
+        @section_pattern = /<<\s+(.*?)\n((?:<.*?\n)*)(.*?)(?=<<\s|\z)/m
+        @indent = ' ' * 4
+        @colors = {
+            skipped: :gray,
+            failure: :red,
+            success: :green,
+            warning: :yellow
+        }
+        @symbols = {
+            skipped:  '',
+            threw:    '',
+            finished: '',
+            warning:  ''
+        }
+
         file_content = File.read(File.join(tests_dir, filepath))
-        sections = file_content.scan(@@section_pattern)
+        sections = file_content.scan(@section_pattern)
 
         @title = filepath.split('.')[...-1].join('.').capitalize
 
@@ -39,11 +42,16 @@ class TestFile
             Test.new(name, tags, content)
         end
 
-        @skipped_tests = 0
-        @warnings      = 0
-        @passed_tests  = 0
-        @failed_tests  = 0
-        @total_tests   = @tests.length
+        @skipped  = 0
+        @warnings = 0
+        @passed   = 0
+        @failed   = 0
+        @total    = @tests.length
+
+        @parsed      = 0
+        @evaluated   = 0
+        @synthesized = 0
+        @simulated   = 0
 
         @total_time = 0
     end
@@ -56,9 +64,9 @@ class TestFile
 
             @total_time += test.elapsed_time unless test.elapsed_time.nil?
 
-            color = @@colors[result]
-            symbol = @@symbols[symbol]
-            stop_stage = @@stop_stage_symbols[test.reached_stage]
+            color = @colors[result]
+            symbol = @symbols[symbol]
+            stop_stage = TestFile.stop_stage_symbols[test.reached_stage]
 
             result_str = "#{symbol} #{stop_stage} : #{test.name}".colorize(color)
             unless exception.nil?
@@ -68,30 +76,33 @@ class TestFile
                 result_str += " - #{exception.to_s.strip}"
             end
 
-            _std_puts "#{@@indent}#{result_str}"
+            _std_puts "#{@indent}#{result_str}"
 
-            @skipped_tests += 1 if result == :skipped
-            @warnings      += 1 if result == :warning
-            @passed_tests  += 1 if result == :success
-            @failed_tests  += 1 if result == :failure
+            @skipped  += 1 if result == :skipped
+            @warnings += 1 if result == :warning
+            @passed   += 1 if result == :success
+            @failed   += 1 if result == :failure
+
+            @parsed      += 1 if test.reached_stage > 0
+            @evaluated   += 1 if test.reached_stage > 1
+            @synthesized += 1 if test.reached_stage > 2
+            @simulated   += 1 if test.reached_stage > 3
         end
 
         _print_results
-
-        [@skipped_tests, @warnings, @passed_tests, @failed_tests, @total_tests]
     end
 
     def _print_results
-        skip_str = @skipped_tests.to_s.gray
+        skip_str = @skipped.to_s.gray
         warning_str = @warnings.to_s.yellow
-        failed_str = @failed_tests.to_s.red
-        passed_str = @passed_tests.to_s.green
-        total_str  = @total_tests.to_s
+        failed_str = @failed.to_s.red
+        passed_str = @passed.to_s.green
+        total_str  = @total.to_s
 
         result_str = [skip_str, warning_str, failed_str, passed_str, total_str].join(' / ')
 
-        _std_puts "#{@@indent}Elapsed time: #{@total_time.round(2)} ms"
-        _std_puts "#{@@indent}#{result_str}"
+        _std_puts "#{@indent}Elapsed time: #{@total_time.round(2)} ms"
+        _std_puts "#{@indent}#{result_str}"
     end
 
     def _std_puts(str)

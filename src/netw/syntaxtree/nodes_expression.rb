@@ -21,18 +21,14 @@ class BinaryExpressionNode < ASTNode
     def evaluate(scope, *)
         debug_log
 
-        lh_refs = lh_expr_node.evaluate(scope)
-        debug_log 'Left Outputs:', lh_refs
+        @lh_refs = lh_expr_node.evaluate(scope)
+        debug_log 'Left Outputs:', @lh_refs
 
-        rh_refs = rh_expr_node.evaluate(scope)
-        debug_log 'Right Outputs:', rh_refs
+        @rh_refs = rh_expr_node.evaluate(scope)
+        debug_log 'Right Outputs:', @rh_refs
 
-        operation = op_node.evaluate
-        debug_log 'Operation', operation
-
-        assert_valid_binary_expression(scope, lh_refs, rh_refs, operation)
-
-        scope.template.add_binary(operation, lh_refs, rh_refs)
+        @operation = op_node.evaluate
+        debug_log 'Operation', @operation
     end
 end
 
@@ -80,13 +76,13 @@ class ExpressionIdentifierNode < ASTNode
         @children[0]
     end
 
-    def evaluate(scope, *)
+    def evaluate(*)
         debug_log
 
         id = id_node.evaluate
         debug_log 'Identifier:', id
 
-        scope.template.reference(id)
+        [Reference.new(id)]
     end
 end
 
@@ -114,7 +110,7 @@ class ExpressionSubscriptNode < ASTNode
         expression_output_refs.map do |output_ref|
             assert_valid_subscript(scope, output_ref, subscript)
 
-            scope.template.reference_add_subscript(output_ref, subscript)
+            Reference.new(output_ref.id, subscript)
         end
     end
 end

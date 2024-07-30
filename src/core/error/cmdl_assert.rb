@@ -174,7 +174,7 @@ def assert_valid_component_expression(scope, comp_id, input_refs)
     end
 end
 
-def assert_valid_binary_expression(scope, lh_refs, rh_refs, operation)
+def assert_valid_binary_gate_expression(scope, lh_refs, rh_refs, operation)
     lh_size = lh_refs.size
     rh_size = rh_refs.size
 
@@ -197,10 +197,22 @@ def assert_valid_binary_expression(scope, lh_refs, rh_refs, operation)
         end
     end
 
-    return if ['and', 'or', 'not'].include?(operation)
+    return if ['and', 'or', 'not', 'eq'].include?(operation)
 
     raise ExpressionInvalidOperationError,
           "Invalid operation: #{operation}, allowed operations are 'and', 'or', 'not'."
+end
+
+def assert_valid_nor_expression(scope, lf_refs, rh_refs)
+    assert_signals_declared(scope, lf_refs + rh_refs)
+
+    assert_valid_binary_gate_expression(scope, lf_refs, rh_refs, 'or')
+end
+
+def assert_valid_nand_expression(scope, lf_refs, rh_refs)
+    assert_signals_declared(scope, lf_refs + rh_refs)
+
+    assert_valid_binary_gate_expression(scope, lf_refs, rh_refs, 'and')
 end
 
 def assert_valid_unary_expression(scope, input_refs, operation)
@@ -241,7 +253,7 @@ end
 #
 
 def assert_valid_identifier(id)
-    return unless ['not', 'and', 'or'].include?(id)
+    return unless ['not', 'and', 'or', 'xor', 'nor', 'nand', 'xnor'].include?(id)
 
     raise ForbiddenIdentifierError,
           "Identifier '#{id}' is forbidden."

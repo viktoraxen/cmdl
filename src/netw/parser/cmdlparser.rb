@@ -14,16 +14,26 @@ class CmdlParser < Parser
             token(/<=/)      { |m| m }
             token(/=>/)      { |m| m }
             token(/[(|)]/)   { |m| m }
-            token(/[\[|\]]/) { |m| m }
             token(/,/)       { |m| m }
+
+            # Indexing
             token(/\.\./)    { |m| m }
             token(/\./)      { |m| m }
+
+            # Subscope
             token(/::/)      { |m| m }
             token(/:/)       { |m| m }
-            token(/\^/)      { |m| m }
-            token(/!/)       { |m| m }
-            token(/&/)       { |m| m }
-            token(/\|/)      { |m| m }
+
+            # Operators
+            token(/=/)   { |m| m }
+            token(/\|/)  { |m| m }
+            token(/&/)   { |m| m }
+            token(/!\|/) { |m| m }
+            token(/!&/)  { |m| m }
+            token(/\^/)  { |m| m }
+            token(/~/)   { |m| m }
+            token(/\+/)  { |m| m }
+            token(/!/)   { |m| m }
 
             token(/[a-zA-Z][a-zA-Z_0-9]*/) { |m| m }
             token(/-?\d+/)                 { |m| m }
@@ -183,26 +193,61 @@ class CmdlParser < Parser
             end
 
             rule :expression do
+                match(:expression_compare) { |expr| expr }
+            end
+
+            rule :expression_compare do
+                match(:expression_compare, :operator_compare, :expression_or) do |lh, op, rh|
+                    EqualsExpressionNode.new(lh, op, rh)
+                end
                 match(:expression_or) { |expr| expr }
             end
 
             rule :expression_or do
                 match(:expression_or, :operator_or, :expression_and) do |lh, op, rh|
-                    BinaryExpressionNode.new(lh, op, rh)
+                    BinaryGateExpressionNode.new(lh, op, rh)
                 end
                 match(:expression_and) { |expr| expr }
             end
 
             rule :expression_and do
-                match(:expression_and, :operator_and, :expression_merge) do |lh, op, rh|
-                    BinaryExpressionNode.new(lh, op, rh)
+                match(:expression_and, :operator_and, :expression_nor) do |lh, op, rh|
+                    BinaryGateExpressionNode.new(lh, op, rh)
+                end
+                match(:expression_nor) { |expr| expr }
+            end
+
+            rule :expression_nor do
+                match(:expression_nor, :operator_nor, :expression_nand) do |lh, op, rh|
+                    NorExpressionNode.new(lh, op, rh)
+                end
+                match(:expression_nand) { |expr| expr }
+            end
+
+            rule :expression_nand do
+                match(:expression_nand, :operator_nand, :expression_xor) do |lh, op, rh|
+                    NandExpressionNode.new(lh, op, rh)
+                end
+                match(:expression_xor) { |expr| expr }
+            end
+
+            rule :expression_xor do
+                match(:expression_xor, :operator_xor, :expression_xnor) do |lh, op, rh|
+                    XorExpressionNode.new(lh, op, rh)
+                end
+                match(:expression_xnor) { |expr| expr }
+            end
+
+            rule :expression_xnor do
+                match(:expression_xnor, :operator_xnor, :expression_merge) do |lh, op, rh|
+                    XnorExpressionNode.new(lh, op, rh)
                 end
                 match(:expression_merge) { |expr| expr }
             end
 
             rule :expression_merge do
                 match(:expression_merge, :operator_merge, :expression_not) do |lh, op, rh|
-                    BinaryExpressionNode.new(lh, op, rh)
+                    BinaryGateExpressionNode.new(lh, op, rh)
                 end
                 match(:expression_not) { |expr| expr }
             end
@@ -225,6 +270,13 @@ class CmdlParser < Parser
                 end
                 match(:expression_primary) { |expr| expr }
             end
+
+            # rule :expression_when_else do
+            #     match(:expression, 'when', :expression, 'else', :expression) do |primary, _, cond, _, secondary|
+            #         WhenElseExpressionNode.new(primary, cond, secondary)
+            #     end
+            #     match(:expression_primary) { |expr| expr }
+            # end
 
             rule :expression_primary do
                 match('(', :expressions, ')') { |_, expr, _| expr }
@@ -258,22 +310,47 @@ class CmdlParser < Parser
 
             rule :operator_or do
                 match('or') { |op| StringNode.new(op) }
-                match('|') { |op| StringNode.new('or') }
+                match('|') { |_| StringNode.new('or') }
             end
 
             rule :operator_and do
                 match('and') { |op| StringNode.new(op) }
-                match('&') { |op| StringNode.new('and') }
+                match('&') { |_| StringNode.new('and') }
+            end
+
+            rule :operator_nor do
+                match('nor') { |op| StringNode.new(op) }
+                match('!|') { |_| StringNode.new('nor') }
+            end
+
+            rule :operator_nand do
+                match('nand') { |op| StringNode.new(op) }
+                match('!&') { |_| StringNode.new('nand') }
+            end
+
+            rule :operator_xor do
+                match('xor') { |op| StringNode.new(op) }
+                match('^') { |_| StringNode.new('xor') }
+            end
+
+            rule :operator_xnor do
+                match('xnor') { |op| StringNode.new(op) }
+                match('~') { |_| StringNode.new('xnor') }
             end
 
             rule :operator_merge do
                 match('cat') { |op| StringNode.new(op) }
-                match('^') { |op| StringNode.new('cat') }
+                match('+') { |_| StringNode.new('cat') }
+            end
+
+            rule :operator_compare do
+                match('eq') { |op| StringNode.new(op) }
+                match('=') { |_| StringNode.new('eq') }
             end
 
             rule :operator_not do
                 match('not') { |op| StringNode.new(op) }
-                match('!') { |op| StringNode.new('not') }
+                match('!') { |_| StringNode.new('not') }
             end
 
             #

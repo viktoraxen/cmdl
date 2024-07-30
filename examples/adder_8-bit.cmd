@@ -1,20 +1,20 @@
 signal a: 8, b: 8, k: 1
 k <= 0
 signal result: 8, c <= Adder(a, b, k)
-signal res_m: 9 <= c ^ result
+signal res_m: 9 <= c + result
 
 component Adder(a: 8, b: 8, k) => s: 8, c
     signal d: 7
     signal h: 8
 
-    h.0 <= Xor(b.0, k)
-    h.1 <= Xor(b.1, k)
-    h.2 <= Xor(b.2, k)
-    h.3 <= Xor(b.3, k)
-    h.4 <= Xor(b.4, k)
-    h.5 <= Xor(b.5, k)
-    h.6 <= Xor(b.6, k)
-    h.7 <= Xor(b.7, k)
+    h.0 <= b.0 xor k
+    h.1 <= b.1 xor k
+    h.2 <= b.2 xor k
+    h.3 <= b.3 xor k
+    h.4 <= b.4 xor k
+    h.5 <= b.5 xor k
+    h.6 <= b.6 xor k
+    h.7 <= b.7 xor k
 
     s.0, d.0 <= OneBitAdder(a.0, h.0, k)
     s.1, d.1 <= OneBitAdder(a.1, h.1, d.0)
@@ -26,13 +26,9 @@ component Adder(a: 8, b: 8, k) => s: 8, c
     s.7, c   <= OneBitAdder(a.7, h.7, d.6)
 
     component OneBitAdder(a, b, cin) => s, cout
-        signal z <= Xor(a, b)
+        signal z <= a xor b
 
-        s    <= Xor(z, cin)
+        s    <= z xor cin
         cout <= (z and cin) or (a and b)
-    end
-
-    component Xor(a, b) => x
-        x <= a and not b or not a and b
     end
 end
