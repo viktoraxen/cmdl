@@ -1,7 +1,7 @@
 # CMDL
 ### *Component Description Language*
 
-CMDL is a very simple version of VHDL. CMDL generates a dataflow graph of binary values connected through one-way AND-, OR-, and NOT-gates. 
+CMDL is a very simple version of the hardware discriptor language VHDL, written in Ruby. CMDL generates a dataflow graph of binary values connected through one-way AND-, OR-, and NOT-gates. 
 
 Composite components can be created and reused to make creating complex networks easier. See the example below for an example of a network making use of composite components.
 
